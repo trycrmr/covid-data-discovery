@@ -1,0 +1,56 @@
+<!doctype html>
+<html class="no-js" lang="">
+
+<head>
+  <meta charset="utf-8">
+  <title>COVID-19 Data Discovery</title>
+  <meta name="description" content="COVID-19 Data Discovery">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="text/javascript" src="index.js"></script>
+
+  <!-- <link rel="manifest" href="site.webmanifest"> -->
+  <!-- <link rel="apple-touch-icon" href="icon.png"> -->
+  <!-- Place favicon.ico in the root directory -->
+
+  <!-- <link rel="stylesheet" href="css/normalize.css"> -->
+  <!-- <link rel="stylesheet" href="css/main.css"> -->
+
+  <!-- <meta name="theme-color" content="#fafafa"> -->
+</head>
+
+<body>
+  <div class="main">
+    <div id='plot'></div>
+  </div>
+  <!--[if IE]>
+    <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
+  <![endif]-->
+</body>
+<script>
+document.addEventListener("DOMContentLoaded", async(event) => {
+  alert('contentloaded')
+  const getData = async(url, config) => {
+    try {
+      const data = await fetch(url, config)
+      const jsonData = await data.json()
+      return jsonData
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  // const data = await getData('http://localhost:3000/api', { mode: 'no-cors' })
+  const thisData = await getData('http://localhost:3000/api', {
+    method: 'GET', // *GET, POST, PUT, DELETE, etc.
+    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+    headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+  const app = new (init(thisData)) // returns App
+  app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+});
+</script>
+
+</html>
