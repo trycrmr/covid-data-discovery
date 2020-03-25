@@ -32,7 +32,6 @@ const init = (data) => {
       }
     }
     this.setFilters = (type, filters) => {
-      console.info(filters)
       switch(type) {
         case 'region':
           return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )

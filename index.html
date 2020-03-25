@@ -19,8 +19,89 @@
   <!-- <meta name="theme-color" content="#fafafa"> -->
 </head>
 
+<style>
+  body {
+    width: 100%;
+    height: 100vh;
+    /* background-color: pink; */
+  }
+  form {
+    width: 100%;
+  }
+  select {
+    width: 100%;
+  }
+  fieldset {
+
+  }
+  fieldset.metrics {
+    margin: auto;
+    text-align-last: justify;
+    height: fit-content;
+  }
+  fieldset.metrics div {
+    display: inline-block;
+  }
+  label.metricCheckbox {
+    line-height: 2em;
+    padding: 0.5em;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 0.5em;
+    cursor: pointer;
+  }
+  label.metricCheckbox.selected {
+    color: white;
+    font-weight: bold;
+    background-color: black;
+  }
+  fieldset.metrics label > input {
+    display: none;
+  }
+
+</style>
+
 <body>
   <div class="main">
+    <form class="fitler-form">
+      <fieldset>
+        <legend>Choose a region</legend>
+        <select name="filter-regions" style="width: 100%;">
+          <option value="Global">Global</option>
+          <option value="Africa">Africa</option>
+          <option value="Australia">Australia</option>
+          <option value="Canada">Canada</option>
+          <option value="China">China</option>
+          <option value="Europe">Europe</option>
+          <option value="LatinAmerica">Latin America</option>
+          <option value="USA">USA</option>
+        </select>
+      </fieldset>
+      <fieldset class="metrics">
+        <legend>Choose a few metrics</legend>
+        <div>
+          <label class="metricCheckbox selected">Cases
+            <input type="checkbox" value="cases" name="cases" checked>
+          </label>
+        </div>
+        <div>
+          <label class="metricCheckbox">Recovered
+            <input type="checkbox" value="recovered" name="recovered">
+          </label>
+        </div>
+        <div>
+          <label class="metricCheckbox">Critical
+            <input type="checkbox" value="critical" name="critical">
+          </label>
+        </div>
+        <div>
+          <label class="metricCheckbox">Deaths
+            <input type="checkbox" value="deaths" name="deaths">
+          </label>
+        </div>
+        <br style="clear: both;" />
+      </fieldset>
+    </form>
     <div id='plot'></div>
   </div>
   <!--[if IE]>
@@ -29,7 +110,6 @@
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", async(event) => {
-  alert('contentloaded')
   const getData = async(url, config) => {
     try {
       const data = await fetch(url, config)
@@ -40,7 +120,6 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  // const data = await getData('http://localhost:3000/api', { mode: 'no-cors' })
   const thisData = await getData('http://localhost:3000/api', {
     method: 'GET', // *GET, POST, PUT, DELETE, etc.
     cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
@@ -50,6 +129,21 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   })
   const app = new (init(thisData)) // returns App
   app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+  
+  document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
+  document.querySelectorAll('.metricCheckbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    if(!event.target.value) return undefined
+    if(event.target.checked && !(app.state.filters.metric.includes(event.target.value))) {
+      event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
+      app.setFilters('metric', [ ...app.state.filters.metric, event.target.value ])
+    } else if(!event.target.checked && app.state.filters.metric.length > 1) {
+      event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
+      app.setFilters('metric', app.state.filters.metric.filter( metric => metric !== event.target.value ))
+    } else {
+      return undefined
+    }
+  }))
+
 });
 </script>
 
