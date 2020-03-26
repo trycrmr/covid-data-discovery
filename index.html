@@ -20,16 +20,47 @@
 </head>
 
 <style>
+  .sticky {
+    position: -webkit-sticky; 
+    position: sticky; 
+    top: 0px;
+    /* border-bottom: 1px solid black; */
+    background-color: white;
+    margin: auto;
+    /* text-align-last: justify; */
+    height: fit-content;
+    z-index: 999;
+  }
+  nav {
+    position: -webkit-sticky; 
+    position: sticky; 
+    top: 0px;
+    /* border-bottom: 1px solid black; */
+    background-color: white;
+    margin: auto;
+    /* text-align-last: justify; */
+    height: fit-content;
+    z-index: 999;
+  }
+  nav > ul {
+    list-style-type: none;
+    padding: 0.1em;
+    margin: auto;
+    text-align-last: justify;
+  }
+  nav li {
+    padding: 0 0 0 0.2em;
+    display: inline-block;
+  }
   body {
-    width: 100%;
-    height: 100vh;
     font-family: serif;
+    position: relative;
   }
   form {
-    width: 100%;
+    /* width: 100%; */
   }
   select {
-    width: 100%;
+    /* width: 100%; */
   }
   fieldset.metrics {
     margin: auto;
@@ -39,7 +70,7 @@
   fieldset.metrics div {
     display: inline-block;
   }
-  label.metricCheckbox {
+  label.metric-checkbox {
     line-height: 2em;
     padding: 0.5em;
     background-color: white;
@@ -47,7 +78,7 @@
     border-radius: 0.5em;
     cursor: pointer;
   }
-  label.metricCheckbox.selected {
+  label.metric-checkbox.selected {
     color: white;
     font-weight: bold;
     background-color: black;
@@ -72,10 +103,26 @@
   th, td, tr {
     border: 1px solid black;
   }
+  div.open-an-issue {
+    position: -webkit-sticky;
+    position: sticky;
+    bottom: 0px;
+    right: 0px
+  }
 </style>
 
+<!-- var height = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight ); -->
 <body>
-  <div class="main">
+  <a href="top"></a>
+  <div class="sticky">
+    <nav class="header">
+      <ul>
+        <li><a href="#top">Jump to top</a></li>
+        <li><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a></li>
+        <li><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a></li>
+        <li><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an issue.</a></li>
+      </ul>
+    </nav>
     <form class="fitler-form">
       <fieldset>
         <legend>Choose a region</legend>
@@ -93,30 +140,30 @@
       <fieldset class="metrics">
         <legend>Choose a few metrics</legend>
         <div>
-          <label class="metricCheckbox selected">Cases
+          <label class="metric-checkbox selected">Cases
             <input type="checkbox" value="cases" name="cases" checked>
           </label>
         </div>
         <div>
-          <label class="metricCheckbox">Recovered
+          <label class="metric-checkbox">Recovered
             <input type="checkbox" value="recovered" name="recovered">
           </label>
         </div>
         <div>
-          <label class="metricCheckbox">Critical
+          <label class="metric-checkbox">Critical
             <input type="checkbox" value="critical" name="critical">
           </label>
         </div>
         <div>
-          <label class="metricCheckbox">Deaths
+          <label class="metric-checkbox">Deaths
             <input type="checkbox" value="deaths" name="deaths">
           </label>
         </div>
       </fieldset>
     </form>
+  </div>
     <div id='plot'></div>
     <div class='table'></div>
-  </div>
   <!--[if IE]>
     <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
   <![endif]-->
@@ -144,7 +191,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
-  document.querySelectorAll('.metricCheckbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+  document.querySelectorAll('.metric-checkbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
     if(!event.target.value) return undefined
     if(event.target.checked && !(app.state.filters.metric.includes(event.target.value))) {
       event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
