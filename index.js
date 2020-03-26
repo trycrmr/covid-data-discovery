@@ -46,6 +46,8 @@ const init = (data) => {
       let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
       this.state.plot.target(id)
       Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).then(() => console.info('Chart updated')).catch(err => console.error(err)) // Handle this error some other way later
+      document.querySelector('div.table').remove()
+      document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     }
     this.getPlotConfig = (type = 'bar', filters = this.state.filters, plotLayout = undefined) => {
       plotLayout = { title: `Count of ${[filters.metric.slice(0, -1).join(', '), filters.metric.slice(-1)[0]].join(filters.metric.length < 2 ? '' : ' and ')} in ${filters.region[0]}`} // https://stackoverflow.com/a/16251861/5935694
@@ -101,6 +103,28 @@ const init = (data) => {
           ]
       }
       return [plotData, plotLayout]
+    }
+    this.generateTable = (data, details) => {
+      let header = data.reduce((acc, curr, currIdx, origArr) => {
+        let thisRow = `<th>${curr.name}</th>`
+        if(currIdx === origArr.length - 1) thisRow += '</tr></thead>'
+        return acc += thisRow
+      }, '<thead><tr><th></th>')
+
+      let dataPointCount = data[0].x.length
+      let metricCount = data.length
+      let rows = '<tbody>'
+      for (let i = 0; i < dataPointCount; i++) {
+        rows += `<tr><th>${data[0].y[i]}</th>`
+        for (let j = 0; j < metricCount; j++) {
+          rows += `<td>${data[j].x[i]}</td>`
+          if(metricCount - 1 === j) rows += `</tr>`
+        }
+      }
+
+      let html = `<div class="table"><table><caption>${details.title}</caption>${header}${rows}`
+      html += `</tbody></table></div>`
+      return document.createRange().createContextualFragment(html)
     }
   }
 

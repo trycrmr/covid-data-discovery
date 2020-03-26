@@ -60,7 +60,19 @@
   #plot {
     height: 100vh;
   }
-
+  .table {
+    margin: 1em;
+    height: fit-content;
+    /* overflow-x: scroll; */
+  }
+  table {
+    table-layout: auto;
+    border-collapse: collapse;
+    border: 1px solid black;
+  }
+  th, td, tr {
+    border: 1px solid black;
+  }
 </style>
 
 <body>
@@ -101,10 +113,10 @@
             <input type="checkbox" value="deaths" name="deaths">
           </label>
         </div>
-        <br style="clear: both;" />
       </fieldset>
     </form>
     <div id='plot'></div>
+    <div class='table'></div>
   </div>
   <!--[if IE]>
     <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
