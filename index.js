@@ -52,7 +52,12 @@ const init = (data) => {
     this.getPlotConfig = (type = 'bar', filters = this.state.filters, plotLayout = undefined) => {
       plotLayout = { title: `Count of ${[filters.metric.slice(0, -1).join(', '), filters.metric.slice(-1)[0]].join(filters.metric.length < 2 ? '' : ' and ')} in ${filters.region[0]}`} // https://stackoverflow.com/a/16251861/5935694
       plotLayout = { 
-        ...plotLayout, 
+        ...plotLayout,
+        font: {
+          family: getComputedStyle(document.getElementById('plot')).fontFamily,
+          size: getComputedStyle(document.getElementById('plot')).fontSize,
+          color: getComputedStyle(document.getElementById('plot')).color
+        },
         autosize: false, 
         width: parseFloat(getComputedStyle(this.state.plot.target()).width), 
         // height needs to be set dynamically based on the number of items on the x-axis to allow it to dynamically extend vertically with an unobtrusive distance between ticks
