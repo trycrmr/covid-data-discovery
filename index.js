@@ -73,9 +73,10 @@ const init = (data) => {
               return acc
             }, { x: [], y: [], name: undefined, type: 'bar', orientation: 'h' })
           })
+          let calculatedHeight = parseFloat(getComputedStyle(this.state.plot.target()).fontSize) * plotData[0].y.length * 2 // Twice the default font size multiplied by the number of data points on the y-axis
           plotLayout = { ...plotLayout, 
             ...{ 
-              height: parseFloat(getComputedStyle(this.state.plot.target()).fontSize) * plotData[0].y.length * 2, // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
+              height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
               xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
                 ...plotLayout.xaxis,
                 mirror: 'allticks',
