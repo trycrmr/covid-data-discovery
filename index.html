@@ -23,6 +23,9 @@
   header {
     text-align: center;
   }
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0.5em;
+  }
   .sticky {
     position: -webkit-sticky; 
     position: sticky; 
@@ -42,20 +45,24 @@
     background-color: white;
     margin: auto;
     /* text-align-last: justify; */
-    height: fit-content;
+    /* height: fit-content; */
+    width: 100%;
     z-index: 999;
-    padding-bottom: 0.5em;
+    /* padding-bottom: 0.5em; */
   }
   nav > ul {
     list-style-type: none;
     padding: 0.1em;
-    margin: auto;
-    text-align-last: justify;
+    margin: auto;    
+    /* text-align-last: justify; */
+    width: 100%;
+    display: inline-block;
   }
   nav li {
     padding: 0 0 0 0.2em;
-    display: inline-block;
+    /* display: inline-block; */
     line-height: 2em;
+    float: right;
   }
   body {
     font-family: serif;
@@ -114,6 +121,9 @@
     bottom: 0px;
     right: 0px
   }
+  .bar-separator {
+    margin: 1em;
+  }
 </style>
 
 <!-- var height = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight ); -->
@@ -121,14 +131,14 @@
   <header>
     <h1>COVID-19 Stats</h1>
     <h4>The latest stats made mobile-friendly, fast, and accessible. Report an issue with any trouble.</h4>
+    <h5 class="last-updated">Last updated: [timestamp loading...]</h5>
+    <h6>Data Sources: <a href="https://bnonews.com/index.php/2020/03/the-latest-coronavirus-cases/" target="_blank" rel="noreferrer noopener" alt="Link to BNO data source">BNO</a>, <a href="https://www.coronatracker.com/about/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker about page">Corona Tracker</a> (<a href="https://api.coronatracker.com/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker API documentation">API</a>), <a href="https://github.com/novelcovid/api#sources" target="_blank" rel="noreferrer noopener" alt="Link to NovelCovid API's data sources">NovelCovid API</a><span class="bar-separator">|</span><a href="https://ncov2019.live/" target="_blank" rel="noreferrer noopener" alt="Link to ncov2019.live">Inspiration</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an issue.</a>
+    </h6>
   </header>
   <div class="sticky" id="top">
     <nav class="header">
       <ul>
         <li><a href="#top">Jump to top</a></li>
-        <li><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a></li>
-        <li><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a></li>
-        <li><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an issue.</a></li>
       </ul>
     </nav>
     <form class="fitler-form">
@@ -197,6 +207,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     },
   })
   const app = new (init(thisData)) // returns App
+  app.updateTimestamp()
   app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))

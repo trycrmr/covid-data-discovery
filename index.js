@@ -12,6 +12,7 @@ const init = (data) => {
   return function App (state = defaultState) {
     this.log = output => console.info(output)
     this.state = state
+    this.updateTimestamp = (timeString = `${new Date(this.state.data.Global.lastUpdated).toLocaleString(undefined, {dateStyle: 'full', timeStyle: 'full'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
     this.updateState = (newState) => {
       if(!(JSON.stringify(this.state) === JSON.stringify({ ...this.state, ...newState }))) {
         if(this.state.debug) {
