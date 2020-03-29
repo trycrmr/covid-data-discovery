@@ -26,53 +26,43 @@
   h1, h2, h3, h4, h5, h6 {
     margin: 0.5em;
   }
-  .sticky {
+  .sticky-nav {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0px;
+    right: 1em;
+    background-color: white;
+    height: fit-content;
+    z-index: 999;
+  }
+  .sticky-form {
     position: -webkit-sticky; 
     position: sticky; 
-    top: 0px;
-    /* border-bottom: 1px solid black; */
+    top: 2.5em;
     background-color: white;
     margin: auto;
-    /* text-align-last: justify; */
     height: fit-content;
     z-index: 999;
   }
   nav {
-    position: -webkit-sticky; 
-    position: sticky; 
-    top: 0px;
-    /* border-bottom: 1px solid black; */
+    position: -webkit-sticky;
+    position: fixed;
+    top: 1em;
+    right: 1em;
     background-color: white;
     margin: auto;
-    /* text-align-last: justify; */
-    /* height: fit-content; */
-    width: 100%;
+    height: fit-content;
     z-index: 999;
-    /* padding-bottom: 0.5em; */
   }
   nav > ul {
     list-style-type: none;
-    padding: 0.1em;
-    margin: auto;    
-    /* text-align-last: justify; */
-    width: 100%;
-    display: inline-block;
-  }
-  nav li {
-    padding: 0 0 0 0.2em;
-    /* display: inline-block; */
-    line-height: 2em;
-    float: right;
+    padding: 0px;
+    margin: auto;
+    list-style-type: none;
   }
   body {
     font-family: serif;
     position: relative;
-  }
-  form {
-    /* width: 100%; */
-  }
-  select {
-    /* width: 100%; */
   }
   fieldset.metrics {
     margin: auto;
@@ -126,8 +116,14 @@
   }
 </style>
 
-<!-- var height = Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight ); -->
 <body>
+  <div class="sticky-nav" id="top">
+    <nav class="header">
+      <ul>
+        <li><a href="#top">Top</a></li>
+      </ul>
+    </nav>
+  </div>
   <header>
     <h1>COVID-19 Stats</h1>
     <h4>The latest stats made mobile-friendly, fast, and accessible. Report an issue with any trouble.</h4>
@@ -135,12 +131,7 @@
     <h6>Data Sources: <a href="https://bnonews.com/index.php/2020/03/the-latest-coronavirus-cases/" target="_blank" rel="noreferrer noopener" alt="Link to BNO data source">BNO</a>, <a href="https://www.coronatracker.com/about/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker about page">Corona Tracker</a> (<a href="https://api.coronatracker.com/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker API documentation">API</a>), <a href="https://github.com/novelcovid/api#sources" target="_blank" rel="noreferrer noopener" alt="Link to NovelCovid API's data sources">NovelCovid API</a><span class="bar-separator">|</span><a href="https://ncov2019.live/" target="_blank" rel="noreferrer noopener" alt="Link to ncov2019.live">Inspiration</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an issue.</a>
     </h6>
   </header>
-  <div class="sticky" id="top">
-    <nav class="header">
-      <ul>
-        <li><a href="#top">Jump to top</a></li>
-      </ul>
-    </nav>
+  <div class="sticky-form" id="top">
     <form class="fitler-form">
       <fieldset>
         <legend>Choose a region</legend>
