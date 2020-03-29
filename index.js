@@ -52,6 +52,7 @@ const init = (data) => {
       document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
     }
     this.getPlotConfig = (type = 'bar', filters = this.state.filters, plotLayout = undefined) => {
+      let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
       plotLayout = { title: `Count of ${[filters.metric.slice(0, -1).join(', '), filters.metric.slice(-1)[0]].join(filters.metric.length < 2 ? '' : ' and ')} in ${filters.region[0]}`} // https://stackoverflow.com/a/16251861/5935694
       plotLayout = { 
         ...plotLayout,
@@ -64,8 +65,7 @@ const init = (data) => {
         width: parseFloat(getComputedStyle(this.state.plot.target()).width), 
         // height needs to be set dynamically based on the number of items on the x-axis to allow it to dynamically extend vertically with an unobtrusive distance between ticks
         yaxis: { 
-          automargin: true, 
-          tickfont: { size: parseFloat(getComputedStyle(this.state.plot.target()).fontSize) }, 
+          tickfont: { size: currentFontSize }, 
           autorange: 'reversed' 
         }
       }
@@ -82,20 +82,23 @@ const init = (data) => {
               return acc
             }, { x: [], y: [], name: undefined, type: 'bar', orientation: 'h' })
           })
-          let calculatedHeight = parseFloat(getComputedStyle(this.state.plot.target()).fontSize) * plotData[0].y.length * 2 // Twice the default font size multiplied by the number of data points on the y-axis
+          let calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
+          let calculatedMarginWidth = currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length))
           plotLayout = { ...plotLayout, 
             ...{ 
               height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
+              margin: { l: calculatedMarginWidth },
               xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
                 ...plotLayout.xaxis,
                 mirror: 'allticks',
                 side: 'top',
                 fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
-                showspikes: true // on hover, a dotted line will track to either axis and display the labels
+                showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
+                tickformat: ','
               },
               yaxis: { ...plotLayout.yaxis,
                 fixedrange: true,
-                showspikes: true
+                showspikes: true,
               }
             }  
           }

@@ -62,8 +62,23 @@
     list-style-type: none;
   }
   body {
-    font-family: serif;
+    font-family: 'Times New Roman';
+    font-size: 1em;
     position: relative;
+  }
+  select {
+    font-family: 'Times New Roman';
+    font-size: 1em;
+    background-color: black;
+    color: white;
+    font-weight: bold;
+    border-radius: 0.5em;
+    text-align-last: center
+  }
+  select > option {
+    background: white;
+    color: black;
+    text-align-last: center;
   }
   fieldset.metrics {
     margin: auto;
@@ -91,7 +106,8 @@
   }
   #plot {
     height: 100vh;
-    font-family: serif;
+    font-family: 'Times New Roman';
+    font-size: 12px; /* Purposefully set and used to calculate the margin based on the device. Times New Roman is an extremely common font for devices, and using this handy calculator https://stackoverflow.com/a/118251/5935694 , Times New Roman's characters are about half the width of the pixels. So, 12px / 2 * the longest country name allows all country names to appear in full without being cut off. Ideally though, I'd be able to line break the country names or dynamically adjust the font size depending on the length of the country name, but idk how to do that yet and the common CSS things weren't garnering results. */
   }
   .table {
     margin: 1em;
