@@ -5,6 +5,7 @@ const init = (data) => {
     data, 
     filters: {region: ['Global'], subregion: [], metric: ['cases']},
     debug: false,
+    // debug: true,
     plot: { target: (id = 'plot') => { return document.getElementById(id) },
     config: undefined },
     listeners: []
