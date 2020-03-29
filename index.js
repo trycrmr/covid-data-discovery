@@ -4,7 +4,7 @@ const init = (data) => {
   const defaultState = { 
     data, 
     filters: {region: ['Global'], subregion: [], metric: ['cases']},
-    debug: true,
+    debug: false,
     plot: { target: (id = 'plot') => { return document.getElementById(id) },
     config: undefined },
     listeners: []
