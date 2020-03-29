@@ -27,7 +27,7 @@ const init = (data) => {
 const defaultState = { 
   data, 
   filters: {region: ['Global'], subregion: [], metric: ['cases']},
-  debug: true,
+  debug: false,
   plot: { target: (id = 'plot') => { return document.getElementById(id) },
   config: undefined },
   listeners: []
@@ -377,7 +377,8 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  const thisData = await getData('http://localhost:3000/api', {
+  // const thisData = await getData('http://localhost:3000/api', {
+    const thisData = await getData('https://covid-data.terrycreamer.codes', {
     method: 'GET', // *GET, POST, PUT, DELETE, etc.
     cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
     headers: {
