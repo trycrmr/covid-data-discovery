@@ -410,13 +410,13 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   }
 
   const thisData = await getData('http://localhost:3000/api', {
-    method: 'GET', // *GET, POST, PUT, DELETE, etc.
-    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, max-age=0'
     },
   })
-  const app = new (init(thisData)) // returns App
+  const app = new (init(thisData)) // returns and instance of App
   app.updateTimestamp()
   app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
   
