@@ -6,18 +6,6 @@
   <title>COVID Data Website</title>
   <meta name="description" content="COVID-19 Data Discovery">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <!-- Global site tag (gtag.js) - Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-31386246-9"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-
-    gtag('config', 'UA-31386246-9');
-  </script>
-
-
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <!-- <script type="text/javascript" src="index.js"></script> -->
   <script type="text/javascript">
@@ -27,7 +15,7 @@ const init = (data) => {
 const defaultState = { 
   data, 
   filters: {region: ['Global'], subregion: [], metric: ['cases']},
-  debug: false,
+  debug: true,
   plot: { target: (id = 'plot') => { return document.getElementById(id) },
   config: undefined },
   listeners: []
@@ -106,8 +94,7 @@ return function App (state = defaultState) {
           }, { x: [], y: [], name: undefined, type: 'bar', orientation: 'h' })
         })
         let calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
-        let calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
-        console.info(plotData[0].y.filter(label => label.length > 20))
+        let calculatedMarginWidth = currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length))
         plotLayout = { ...plotLayout, 
           ...{ 
             height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
@@ -197,13 +184,13 @@ return function App (state = defaultState) {
   }
   .sticky-form {
     position: -webkit-sticky; 
-    position: sticky;
-    top: 1em;
+    position: sticky; 
+    top: 2.5em;
+    background-color: white;
     margin: auto;
     height: fit-content;
-    max-width: 780px;
-    width: 100%;
     z-index: 999;
+    max-width: 780px;
   }
   nav {
     position: -webkit-sticky;
@@ -214,8 +201,6 @@ return function App (state = defaultState) {
     margin: auto;
     height: fit-content;
     z-index: 999;
-    font-size: 12px;
-    line-height: 2em;
   }
   nav > ul {
     list-style-type: none;
@@ -243,7 +228,7 @@ return function App (state = defaultState) {
     text-align-last: center;
   }
   details {
-    margin: auto;
+    margin: 0px auto;
     padding: 0.1em;
   }
   details > summary {
@@ -271,9 +256,6 @@ return function App (state = defaultState) {
     background-color: white;
     /* border: 1px solid black; */
     border-radius: 0.5em;
-  }
-  form.fitler-form {
-    background: white;
   }
   fieldset.metrics {
     margin: auto;
@@ -390,7 +372,7 @@ return function App (state = defaultState) {
               <input type="checkbox" value="recovered" name="recovered">
             </label>
           </div>
-          <div style="display:none;"> <!--Hidden because currently the critical metric has non-zero values in three provinces in China, and that's it.-->
+          <div style="display:none;">
             <label class="metric-checkbox">Critical
               <input type="checkbox" value="critical" name="critical">
             </label>
@@ -422,8 +404,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  // const thisData = await getData('http://localhost:3000/api', {
-    const thisData = await getData('https://covid-data.terrycreamer.codes', {
+  const thisData = await getData('http://localhost:3000/api', {
     method: 'GET', // *GET, POST, PUT, DELETE, etc.
     cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
     headers: {
@@ -449,16 +430,6 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   }))
 
 });
-</script>
-
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-31386246-9"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'UA-31386246-9');
 </script>
 
 </html>
