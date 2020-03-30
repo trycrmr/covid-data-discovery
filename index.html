@@ -378,7 +378,7 @@ return function App (state = defaultState) {
               <input type="checkbox" value="recovered" name="recovered">
             </label>
           </div>
-          <div style="display:none;">
+          <div style="display:none;"> <!--Hidden because currently the critical metric has non-zero values in three provinces in China, and that's it.-->
             <label class="metric-checkbox">Critical
               <input type="checkbox" value="critical" name="critical">
             </label>
