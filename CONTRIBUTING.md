@@ -1,4 +1,5 @@
 ## Non-code contributions
+0. It'll become an imperative to have a Github account pretty quickly, [so make one](https://github.com/join). I'm not affiliated with Github besides the fact I use their free tier services.
 1. Get every device you have that has a browser, [open our production site](https://coviddata.website), and use it. If you notice anything strange, [open an issue](https://github.com/trycrmr/covid-data-discovery/issues).
 2. If you've done that, open an issue with every recommendation you can think of for the site. 
 3. If you've done the above, [look at the existing issues](https://github.com/trycrmr/covid-data-discovery/issues) and [add a label to them](https://github.com/trycrmr/covid-data-discovery/labels). If an issue is related/redundant to another issue, link it to the related issue by typing a hashtag/pound sign, then the issue number it's related/redundant to (example: "Related to #19" (While commenting on issue 20)).
