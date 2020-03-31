@@ -90,8 +90,9 @@ return function App (state = defaultState) {
             if(!acc.name) acc.name = thisMetric 
             acc.x.push(curr[thisMetric]) // Note that selecting "critical" in Europe & Latin America currently results in NaN. Idk if this is by design or a data quality issue. 
             acc.y.push(curr.country) // 'country' is the key for whatever the location is called (region, country, subregion, etc.)
+            acc.text.push(curr[thisMetric])
             return acc
-          }, { x: [], y: [], name: undefined, type: 'bar', orientation: 'h' })
+          }, { x: [], y: [], text: [], name: undefined, type: 'bar', orientation: 'h', textposition: 'outside', cliponaxis: false })
         })
         let calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
         let calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
@@ -197,7 +198,7 @@ return function App (state = defaultState) {
     position: fixed;
     bottom: 1em;
     right: 1em;
-    background-color: white;
+    background-color: transparent;
     margin: auto;
     height: fit-content;
     z-index: 999;
