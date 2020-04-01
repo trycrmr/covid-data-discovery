@@ -357,7 +357,7 @@ return function App (state = defaultState) {
     <h1>COVID Data Website</h1>
     <h4>The latest data visualized in a mobile-friendly, fast, and accessible manner. Report an issue with any trouble.</h4>
     <h5 class="last-updated">Last updated: [timestamp loading...]</h5>
-    <h6>Data Sources: <a href="https://bnonews.com/index.php/2020/03/the-latest-coronavirus-cases/" target="_blank" rel="noreferrer noopener" alt="Link to BNO data source">BNO</a>, <a href="https://www.coronatracker.com/about/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker about page">Corona Tracker</a> (<a href="https://api.coronatracker.com/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker API documentation">API</a>), <a href="https://github.com/novelcovid/api#sources" target="_blank" rel="noreferrer noopener" alt="Link to NovelCovid API's data sources">NovelCovid API</a><span class="bar-separator">|</span><a href="https://ncov2019.live/" target="_blank" rel="noreferrer noopener" alt="Link to ncov2019.live">Inspiration</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an issue</a>
+    <h6>Data Sources: <a href="https://bnonews.com/index.php/2020/03/the-latest-coronavirus-cases/" target="_blank" rel="noreferrer noopener" alt="Link to BNO data source">BNO</a>, <a href="https://www.coronatracker.com/about/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker about page">Corona Tracker</a> (<a href="https://api.coronatracker.com/" target="_blank" rel="noreferrer noopener" alt="Link to Corona Tracker API documentation">API</a>), <a href="https://github.com/novelcovid/api#sources" target="_blank" rel="noreferrer noopener" alt="Link to NovelCovid API's data sources">NovelCovid API</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an issue</a>
     </h6>
   </header>
   <hr />
@@ -422,8 +422,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  // const thisData = await getData('http://localhost:3000/api', {
-    const thisData = await getData('https://covid-data.terrycreamer.codes', {
+  const thisData = await getData('https://covid-data.terrycreamer.codes', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
