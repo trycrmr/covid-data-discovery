@@ -1,6 +1,6 @@
 ## Non-code contributions
 0. It'll become an imperative to have a Github account pretty quickly, [so make one](https://github.com/join). I'm not affiliated with Github besides the fact I use their free tier services.
-1. Get every device you have that has a browser, [open our production site](https://coviddata.website), and use it. If you notice anything strange, [open an issue](https://github.com/trycrmr/covid-data-discovery/issues).
+1. Get every device you have that has a browser (typically, your phone, tablet, laptop, and desktop computer), [open our production site](https://coviddata.website), and use it. If you notice anything strange, [open an issue](https://github.com/trycrmr/covid-data-discovery/issues).
 2. If you've done that, open an issue with every recommendation you can think of for the site. 
 3. If you've done the above, [look at the existing issues](https://github.com/trycrmr/covid-data-discovery/issues) and [add a label to them](https://github.com/trycrmr/covid-data-discovery/labels). If an issue is related/redundant to another issue, link it to the related issue by typing a hashtag/pound sign, then the issue number it's related/redundant to (example: "Related to #19" (While commenting on issue 20)).
 4. Now, revisit the issues you've read already and see if you can help with any of them. If you help, subscribe to notifications on the issue as folks respond (if you comment, Github will subscribe you automatically). Helping on an issue is assigning it to yourself, and you're done when it's closed.
