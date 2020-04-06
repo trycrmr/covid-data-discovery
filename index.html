@@ -13,7 +13,9 @@ const init = (data) => {
 
 // var data = JSON.stringify(data)
 const defaultState = { 
-  data, 
+  data: data[0].data,
+  meta: data[1],
+  formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
   filters: {region: ['Global'], subregion: [], metric: ['cases']},
   debug: true,
   plot: { target: (id = 'plot') => { return document.getElementById(id) },
@@ -23,7 +25,7 @@ const defaultState = {
 return function App (state = defaultState) {
   this.log = output => console.info(output)
   this.state = state
-  this.updateTimestamp = (timeString = `${new Date(this.state.data.Global.lastUpdated).toLocaleString(undefined, {dateStyle: 'full', timeStyle: 'full'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
+  this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {dateStyle: 'full', timeStyle: 'full'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
   this.updateState = (newState) => {
     if(!(JSON.stringify(this.state) === JSON.stringify({ ...this.state, ...newState }))) {
       if(this.state.debug) {
@@ -43,10 +45,53 @@ return function App (state = defaultState) {
       return this.state
     }
   }
+  this.updateForm = (formSelection = 'Earth') => {
+    console.info('updating form')
+    let locationNode = this.findLocation(formSelection)
+    // console.info(locationNode)
+    let updatedState = this.updateState( { formOptions: {region: [ locationNode.name ], subregions: Object.keys(locationNode.subregions) } });
+
+    ((obj) => {
+      let regionForm = document.getElementsByName('filter-regions')[0]
+      regionForm.options.length = 0
+      obj.region.forEach(thisRegion => { regionForm.options.add(new Option(thisRegion, thisRegion, false, false)) })
+      console.info("HEREEEEE", locationNode)
+      while(locationNode.superRegionName) { // Walks back up the geographic tree until Earth, which has a null super region
+        locationNode = this.findLocation(locationNode.superRegionName)
+        regionForm.options.add(new Option(locationNode.name, locationNode.name, false, false))
+      }
+      let subregionForm = document.getElementsByName('filter-subregions')[0]
+      subregionForm.options.length = 0
+      obj.subregions.sort().forEach(thisSubregion => { subregionForm.options.add(new Option(thisSubregion, thisSubregion, false, false)) })
+    })(updatedState.formOptions)
+    return undefined
+  }
+  this.findLocation = (str, obj = this.state.data) => {
+    let match = null
+    if(str === obj.name) {
+      match = obj
+      return match
+    }
+    if(Object.entries(obj.subregions).length > 0) {
+      for (let [key, thisSubregion] of Object.entries(obj.subregions)) {
+        match = this.findLocation(str, thisSubregion)
+        if(!match) {
+          // do nothing
+        } else {
+          return match
+        }
+      }
+    }
+    return match
+  }
   this.setFilters = (type, filters) => {
     switch(type) {
       case 'region':
+        this.updateForm(filters)
         return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )
+      case 'subregion':
+        this.updateForm(filters)
+        return this.updateState( { filters: { ...this.state.filters, subregion: [ filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
       default:
@@ -62,7 +107,7 @@ return function App (state = defaultState) {
     document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
   }
-  this.getPlotConfig = (type = 'bar', filters = this.state.filters, plotLayout = undefined) => {
+  this.getPlotConfig = (type = 'bar2', filters = this.state.filters, plotLayout = undefined) => {
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
     plotLayout = { title: `Count of ${[filters.metric.slice(0, -1).join(', '), filters.metric.slice(-1)[0]].join(filters.metric.length < 2 ? '' : ' and ')} in ${filters.region[0]}`} // https://stackoverflow.com/a/16251861/5935694
     plotLayout = { 
@@ -83,6 +128,15 @@ return function App (state = defaultState) {
     if(this.state.filters.metric.length > 1) plotLayout = { ...plotLayout, barmode: 'group'  }
     let plotData = undefined
     switch(type) {
+      case 'bar2':
+      plotData = [
+          {
+            x: ['OH', 'YAY', 'NEW', 'CHART'],
+            y: [20, 14, 23, 12],
+            type: 'bar'
+          }
+        ]
+        break
       case 'bar': 
         let filterForRegion = this.state.data[filters.region[0]].regions // eventually could be written to handle multiple selections at once
         plotData = this.state.filters.metric.map(thisMetric => {
@@ -355,15 +409,25 @@ return function App (state = defaultState) {
       <form class="fitler-form">
         <fieldset>
           <legend>Choose a region</legend>
-          <select name="filter-regions" style="width: 100%;">
-            <option value="Global">Global</option>
+          <select name="filter-regions" style="width: 45%;">
+            <!-- <option value="Global">Global</option>
             <option value="Africa">Africa</option>
             <option value="Australia">Australia</option>
             <option value="Canada">Canada</option>
             <option value="China">China</option>
             <option value="Europe">Europe</option>
             <option value="LatinAmerica">Latin America</option>
-            <option value="USA">USA</option>
+            <option value="USA">USA</option> -->
+          </select>
+          <select name="filter-subregions" style="width: 45%;">
+            <!-- <option value="Global">Global</option>
+            <option value="Africa">Africa</option>
+            <option value="Australia">Australia</option>
+            <option value="Canada">Canada</option>
+            <option value="China">China</option>
+            <option value="Europe">Europe</option>
+            <option value="LatinAmerica">Latin America</option>
+            <option value="USA">USA</option> -->
           </select>
         </fieldset>
         <fieldset class="metrics">
@@ -419,10 +483,12 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     },
   })
   const app = new (init(thisData)) // returns and instance of App
+  app.updateForm()
   app.updateTimestamp()
-  app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
+  document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('subregion', event.target.value))
   document.querySelectorAll('.metric-checkbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
     if(!event.target.value) return undefined
     if(event.target.checked && !(app.state.filters.metric.includes(event.target.value))) {
