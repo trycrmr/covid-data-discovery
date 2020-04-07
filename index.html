@@ -87,9 +87,6 @@ return function App (state = defaultState) {
       case 'region':
         this.updateForm(filters)
         return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )
-      // case 'subregion':
-      //   this.updateForm(filters)
-      //   return this.updateState( { filters: { ...this.state.filters, subregion: [ filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
       default:
@@ -105,7 +102,7 @@ return function App (state = defaultState) {
     // document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
   }
-  this.getPlotConfig = (type = 'bar2', filters = this.state.filters, plotLayout = undefined) => {
+  this.getPlotConfig = (type = 'time series', filters = this.state.filters, plotLayout = undefined) => {
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
@@ -130,22 +127,7 @@ return function App (state = defaultState) {
     let plotData = undefined
     switch(type) {
 
-
-
-
-
-      case 'bar2':
-        // const reducePlot = (obj) => {
-        //   let arr = Object.entries(obj).reverse()
-        //   return arr.reduce((acc, curr, currIdx, origArr) => {
-        //     if(!acc.name) acc.name = 'cases' 
-        //     acc.x.push(curr[0])
-        //     acc.y.push(curr[1]) // 'country' is the key for whatever the location is called (region, country, subregion, etc.)
-        //     acc.text.push('cases')
-        //     return acc
-        //   }, { x: [], y: [], text: [], name: undefined, type: 'scatter', orientation: 'v', textposition: 'outside', cliponaxis: false, hoverinfo: 'x+y' })
-        // }
-
+      case 'time series':
         let locationNode = this.findLocation(this.state.filters.region[0])
 
         let locationNodes = Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion])] : [ locationNode ]
@@ -167,41 +149,8 @@ return function App (state = defaultState) {
           }, [])
         }).flat()
 
-
-
-        // console.info('locationNodes', locationNodes)
-        // // console.info('locationNode', locationNode)
-
-        // if(Object.entries(locationNode.totals.daily.cases).length > 0) {
-        //   plotData = reducePlot(Object.entries(locationNode.totals.daily.cases).reverse())
-        // } else {
-        //   plotData = {}
-        //   console.debug(locationNode)
-        // }
-
-        // if(Object.keys(locationNode.subregions).length > 0) { // If the location has subregions
-        //   plotData = [ plotData, ...Object.keys(locationNode.subregions) ]
-        //   plotData = plotData.map(thisPlot => {
-        //     if(typeof thisPlot === 'object') return thisPlot // locationNode has already been set up, so skip that one
-        //     // console.info(locationNode.subregions[thisPlot].totals.daily.cases)
-        //     if(Object.entries(locationNode.subregions[thisPlot].totals.daily.cases).length > 0) {
-        //       return reducePlot(Object.entries(locationNode.subregions[thisPlot].totals.daily.cases).reverse())
-        //     } else {
-        //       console.info(locationNode.subregions[thisPlot].name, locationNode.subregions[thisPlot].totals.daily.cases)
-        //       return {}
-        //     }
-        //   })
-        // } else {
-        //   plotData = [ plotData ]
-        // }
-        // console.info('plotData', plotData)
-        // calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
-        // calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
         plotLayout = { ...plotLayout, 
           ...{ 
-            // height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
-            // height: window.outerHeight * 0.8,
-            // margin: { l: calculatedMarginWidth },
             xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
               ...plotLayout.xaxis,
               mirror: 'allticks',
@@ -217,26 +166,13 @@ return function App (state = defaultState) {
           }  
         }
         break
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-      case 'bar': 
+          
+      case 'bar': // Old bar chart. At the moment this isn't used in favor of the change over time charts
         let filterForRegion = this.state.data[filters.region[0]].regions // eventually could be written to handle multiple selections at once
         plotData = this.state.filters.metric.map(thisMetric => {
           return filterForRegion.reduce((acc, curr) => {
             if(!acc.name) acc.name = thisMetric 
-            acc.x.push(curr[thisMetric]) // Note that selecting "critical" in Europe & Latin America currently results in NaN. Idk if this is by design or a data quality issue. 
+            acc.x.push(curr[thisMetric]) 
             acc.y.push(curr.country) // 'country' is the key for whatever the location is called (region, country, subregion, etc.)
             acc.text.push(curr[thisMetric])
             return acc
@@ -263,6 +199,7 @@ return function App (state = defaultState) {
           }  
         }
         break
+
       default:
         plotData = [
           {
@@ -272,7 +209,6 @@ return function App (state = defaultState) {
           }
         ]
     }
-    // console.info('hhheeerrrre', plotData)
     return [plotData, plotLayout]
   }
   this.generateTable = (data, details) => {
@@ -304,11 +240,7 @@ return function App (state = defaultState) {
   <!-- <link rel="manifest" href="site.webmanifest"> -->
   <!-- <link rel="apple-touch-icon" href="icon.png"> -->
   <!-- Place favicon.ico in the root directory -->
-
-  <!-- <link rel="stylesheet" href="css/normalize.css"> -->
-  <!-- <link rel="stylesheet" href="css/main.css"> -->
-
-  <!-- <meta name="theme-color" content="#fafafa"> -->
+  <!-- ^ Some stuff from HTML5 boilerplate for later I don't want to forget about. -->
 </head>
 
 <style>
@@ -505,24 +437,8 @@ return function App (state = defaultState) {
         <fieldset>
           <legend>Choose a region</legend>
           <select name="filter-regions" style="width: 45%;">
-            <!-- <option value="Global">Global</option>
-            <option value="Africa">Africa</option>
-            <option value="Australia">Australia</option>
-            <option value="Canada">Canada</option>
-            <option value="China">China</option>
-            <option value="Europe">Europe</option>
-            <option value="LatinAmerica">Latin America</option>
-            <option value="USA">USA</option> -->
           </select>
           <select name="filter-subregions" style="width: 45%;">
-            <!-- <option value="Global">Global</option>
-            <option value="Africa">Africa</option>
-            <option value="Australia">Australia</option>
-            <option value="Canada">Canada</option>
-            <option value="China">China</option>
-            <option value="Europe">Europe</option>
-            <option value="LatinAmerica">Latin America</option>
-            <option value="USA">USA</option> -->
           </select>
         </fieldset>
         <fieldset class="metrics">
@@ -532,7 +448,7 @@ return function App (state = defaultState) {
               <input type="checkbox" value="cases" name="cases" checked>
             </label>
           </div>
-          <div>
+          <div style="display:none;"> <!--Hidden because JHU doesn't report recovered cases as change over time -->
             <label class="metric-checkbox">Recovered
               <input type="checkbox" value="recovered" name="recovered">
             </label>
@@ -569,7 +485,6 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  // const thisData = await getData('http://localhost:3000/api', {
   const thisData = await getData('data.json', {
     method: 'GET',
     headers: {
