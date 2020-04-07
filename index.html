@@ -16,14 +16,14 @@ const defaultState = {
   data: data[0].data,
   meta: data[1],
   formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
-  filters: {region: ['Global'], subregion: [], metric: ['cases']},
+  filters: {region: ['Earth'], metric: ['cases']},
   debug: true,
   plot: { target: (id = 'plot') => { return document.getElementById(id) },
   config: undefined },
   listeners: []
 }
 return function App (state = defaultState) {
-  this.log = output => console.info(output)
+  this.log = output => console.debug(output)
   this.state = state
   this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {dateStyle: 'full', timeStyle: 'full'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
   this.updateState = (newState) => {
@@ -38,6 +38,7 @@ return function App (state = defaultState) {
       if(this.state.debug) {
         this.log('=== New State ===')
         this.log(this.state)
+        this.log(' ')
       }
       this.state.listeners.forEach(thisListener => thisListener());
       return this.state
@@ -46,18 +47,15 @@ return function App (state = defaultState) {
     }
   }
   this.updateForm = (formSelection = 'Earth') => {
-    console.info('updating form')
     let locationNode = this.findLocation(formSelection)
-    // console.info(locationNode)
     let updatedState = this.updateState( { formOptions: {region: [ locationNode.name ], subregions: Object.keys(locationNode.subregions) } });
 
     ((obj) => {
       let regionForm = document.getElementsByName('filter-regions')[0]
       regionForm.options.length = 0
       obj.region.forEach(thisRegion => { regionForm.options.add(new Option(thisRegion, thisRegion, false, false)) })
-      console.info("HEREEEEE", locationNode)
-      while(locationNode.superRegionName) { // Walks back up the geographic tree until Earth, which has a null super region
-        locationNode = this.findLocation(locationNode.superRegionName)
+      while(locationNode.superRegionName) { // Will run until Earth, which has a null super region
+        locationNode = this.findLocation(locationNode.superRegionName) // Could be a a perf issue eventually. No noticeable lag at the moment. 
         regionForm.options.add(new Option(locationNode.name, locationNode.name, false, false))
       }
       let subregionForm = document.getElementsByName('filter-subregions')[0]
@@ -89,9 +87,9 @@ return function App (state = defaultState) {
       case 'region':
         this.updateForm(filters)
         return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )
-      case 'subregion':
-        this.updateForm(filters)
-        return this.updateState( { filters: { ...this.state.filters, subregion: [ filters ] } } )
+      // case 'subregion':
+      //   this.updateForm(filters)
+      //   return this.updateState( { filters: { ...this.state.filters, subregion: [ filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
       default:
@@ -103,40 +101,136 @@ return function App (state = defaultState) {
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
     this.state.plot.target(id)
     Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).then(() => console.info('Chart updated')).catch(err => console.error(err)) // Handle this error some other way later
-    document.querySelector('div.table').remove()
-    document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+    // document.querySelector('div.table').remove()
+    // document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
   }
   this.getPlotConfig = (type = 'bar2', filters = this.state.filters, plotLayout = undefined) => {
+    let calculatedHeight
+    let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
     plotLayout = { title: `Count of ${[filters.metric.slice(0, -1).join(', '), filters.metric.slice(-1)[0]].join(filters.metric.length < 2 ? '' : ' and ')} in ${filters.region[0]}`} // https://stackoverflow.com/a/16251861/5935694
     plotLayout = { 
       ...plotLayout,
-      font: {
-        family: getComputedStyle(document.getElementById('plot')).fontFamily,
-        size: getComputedStyle(document.getElementById('plot')).fontSize,
-        color: getComputedStyle(document.getElementById('plot')).color
-      },
+      // font: {
+      //   family: getComputedStyle(document.getElementById('plot')).fontFamily,
+      //   size: getComputedStyle(document.getElementById('plot')).fontSize,
+      //   color: getComputedStyle(document.getElementById('plot')).color
+      // },
       autosize: false, 
-      width: parseFloat(getComputedStyle(this.state.plot.target()).width), 
+      width: parseFloat(getComputedStyle(this.state.plot.target()).width),
+      height: window.innerHeight - (document.querySelector('header').offsetHeight + document.querySelector('.sticky-form').offsetHeight),
       // height needs to be set dynamically based on the number of items on the x-axis to allow it to dynamically extend vertically with an unobtrusive distance between ticks
       yaxis: { 
-        tickfont: { size: currentFontSize }, 
-        autorange: 'reversed' 
+        // tickfont: { size: currentFontSize }, 
+        // autorange: 'reversed' 
       }
     }
     if(this.state.filters.metric.length > 1) plotLayout = { ...plotLayout, barmode: 'group'  }
     let plotData = undefined
     switch(type) {
+
+
+
+
+
       case 'bar2':
-      plotData = [
-          {
-            x: ['OH', 'YAY', 'NEW', 'CHART'],
-            y: [20, 14, 23, 12],
-            type: 'bar'
-          }
-        ]
+        // const reducePlot = (obj) => {
+        //   let arr = Object.entries(obj).reverse()
+        //   return arr.reduce((acc, curr, currIdx, origArr) => {
+        //     if(!acc.name) acc.name = 'cases' 
+        //     acc.x.push(curr[0])
+        //     acc.y.push(curr[1]) // 'country' is the key for whatever the location is called (region, country, subregion, etc.)
+        //     acc.text.push('cases')
+        //     return acc
+        //   }, { x: [], y: [], text: [], name: undefined, type: 'scatter', orientation: 'v', textposition: 'outside', cliponaxis: false, hoverinfo: 'x+y' })
+        // }
+
+        let locationNode = this.findLocation(this.state.filters.region[0])
+
+        let locationNodes = Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion])] : [ locationNode ]
+
+        plotData = this.state.filters.metric.map(thisMetric => {
+          return locationNodes.reduce((acc, curr, currIdx, origArr) => {
+            // if(!curr.name) console.info('=========>', curr)
+            try {
+              let obj = { x: [], y: [], text: [], type: 'scatter', name: `${thisMetric}-${curr.name}` }
+              obj.x = Object.keys(curr.totals.daily[thisMetric])[0] === '1/22/20' ? [ ...Object.keys(curr.totals.daily[thisMetric]) ] : [ ...Object.keys(curr.totals.daily[thisMetric]).reverse() ]
+              obj.y = Object.keys(curr.totals.daily[thisMetric])[0] === '1/22/20' ? [ ...Object.values(curr.totals.daily[thisMetric]) ] : [ ...Object.values(curr.totals.daily[thisMetric]).reverse() ]
+              // obj.text = new Array(Object.keys(curr.totals.daily[thisMetric]).length).map((thisText, idx) => `${acc.x[idx]}`)
+              // console.info(curr, obj)
+              return [ ...acc, obj ]
+            } catch(err) {
+              console.error(err)
+              return acc
+            }
+          }, [])
+        }).flat()
+
+
+
+        // console.info('locationNodes', locationNodes)
+        // // console.info('locationNode', locationNode)
+
+        // if(Object.entries(locationNode.totals.daily.cases).length > 0) {
+        //   plotData = reducePlot(Object.entries(locationNode.totals.daily.cases).reverse())
+        // } else {
+        //   plotData = {}
+        //   console.debug(locationNode)
+        // }
+
+        // if(Object.keys(locationNode.subregions).length > 0) { // If the location has subregions
+        //   plotData = [ plotData, ...Object.keys(locationNode.subregions) ]
+        //   plotData = plotData.map(thisPlot => {
+        //     if(typeof thisPlot === 'object') return thisPlot // locationNode has already been set up, so skip that one
+        //     // console.info(locationNode.subregions[thisPlot].totals.daily.cases)
+        //     if(Object.entries(locationNode.subregions[thisPlot].totals.daily.cases).length > 0) {
+        //       return reducePlot(Object.entries(locationNode.subregions[thisPlot].totals.daily.cases).reverse())
+        //     } else {
+        //       console.info(locationNode.subregions[thisPlot].name, locationNode.subregions[thisPlot].totals.daily.cases)
+        //       return {}
+        //     }
+        //   })
+        // } else {
+        //   plotData = [ plotData ]
+        // }
+        // console.info('plotData', plotData)
+        // calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
+        // calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
+        plotLayout = { ...plotLayout, 
+          ...{ 
+            // height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
+            // height: window.outerHeight * 0.8,
+            // margin: { l: calculatedMarginWidth },
+            xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
+              ...plotLayout.xaxis,
+              mirror: 'allticks',
+              side: 'bottom',
+              fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
+              showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
+              tickformat: ','
+            },
+            yaxis: { ...plotLayout.yaxis,
+              fixedrange: true,
+              showspikes: true,
+            }
+          }  
+        }
         break
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
       case 'bar': 
         let filterForRegion = this.state.data[filters.region[0]].regions // eventually could be written to handle multiple selections at once
         plotData = this.state.filters.metric.map(thisMetric => {
@@ -146,10 +240,10 @@ return function App (state = defaultState) {
             acc.y.push(curr.country) // 'country' is the key for whatever the location is called (region, country, subregion, etc.)
             acc.text.push(curr[thisMetric])
             return acc
-          }, { x: [], y: [], text: [], name: undefined, type: 'bar', orientation: 'h', textposition: 'outside', cliponaxis: false, hoverinfo: 'x+y' })
+          }, { x: [], y: [], text: [], name: undefined, type: 'bar', orientation: 'v', textposition: 'outside', cliponaxis: false, hoverinfo: 'x+y' })
         })
-        let calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
-        let calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
+        calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
+        calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
         plotLayout = { ...plotLayout, 
           ...{ 
             height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
@@ -178,6 +272,7 @@ return function App (state = defaultState) {
           }
         ]
     }
+    // console.info('hhheeerrrre', plotData)
     return [plotData, plotLayout]
   }
   this.generateTable = (data, details) => {
@@ -485,10 +580,10 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   const app = new (init(thisData)) // returns and instance of App
   app.updateForm()
   app.updateTimestamp()
-  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+  app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
-  document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('subregion', event.target.value))
+  document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelectorAll('.metric-checkbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
     if(!event.target.value) return undefined
     if(event.target.checked && !(app.state.filters.metric.includes(event.target.value))) {
