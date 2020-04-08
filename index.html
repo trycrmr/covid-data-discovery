@@ -29,18 +29,19 @@ return function App (state = defaultState) {
   this.updateState = (newState) => {
     if(!(JSON.stringify(this.state) === JSON.stringify({ ...this.state, ...newState }))) {
       if(this.state.debug) {
-      this.log('=== Current State ===')
-      this.log(this.state)
-      this.log('=== State update ===')
-      this.log(newState)
-    }
+        this.log('=== Current State ===')
+        this.log(this.state)
+        this.log('=== State update ===')
+        this.log(newState)
+      }
       this.state = { ...this.state, ...newState }
+      if(newState.filters) this.updatePlot('plot')
       if(this.state.debug) {
         this.log('=== New State ===')
         this.log(this.state)
         this.log(' ')
       }
-      this.state.listeners.forEach(thisListener => thisListener());
+      // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
       return this.state
     } else {
       return this.state
@@ -501,7 +502,8 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   const app = new (init(thisData)) // returns and instance of App
   app.updateForm()
   app.updateTimestamp()
-  app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+  app.updatePlot('plot')
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
