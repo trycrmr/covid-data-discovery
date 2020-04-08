@@ -14,7 +14,7 @@ const init = (data) => {
 // var data = JSON.stringify(data)
 const defaultState = { 
   data: data[0].data,
-  meta: data[1],
+  meta: data[1].meta,
   formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
   filters: {region: ['Earth'], metric: ['cases']},
   debug: true,
@@ -502,7 +502,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   const app = new (init(thisData)) // returns and instance of App
   app.updateForm()
   app.updateTimestamp()
-  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } )
+  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.updatePlot('plot')
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
