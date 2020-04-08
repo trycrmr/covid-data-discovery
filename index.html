@@ -90,6 +90,8 @@ return function App (state = defaultState) {
         return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
+      case 'showSubregions':
+        return this.updateState( { filters: { ...this.state.filters, showSubregions: filters } } )
       default:
         return this.state
     }
@@ -131,15 +133,21 @@ return function App (state = defaultState) {
       case 'time series':
         const timeFormat = {year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
         let locationNode = this.findLocation(this.state.filters.region[0])
-        let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion])] : [ locationNode ]
+        let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
         //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
         plotData = this.state.filters.metric.map(thisMetric => {
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
             // if(!curr.name) console.info('=========>', curr)
             try {
               let obj = { x: [], y: [], text: [], type: 'scatter', name: `${thisMetric}-${curr.name}` }
-              obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).reverse() ].map(thisUnixEpoch => new Date(parseInt(thisUnixEpoch)).toLocaleDateString(undefined, timeFormat))
-              obj.y = [ ...Object.values(curr.totals.daily[thisMetric]).reverse() ]
+              // if(this.state.filters.region[0] === locationNode.name) obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]) ].map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat))
+              obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
+              obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
+              if(parseInt(obj.x[0]) > parseInt(obj.x[1])) { // band aid fix to preserve order. Date to metric key-value pairs are stored as a hashmap and that's making it real tough to ensure the order. https://github.com/trycrmr/covid-data-batch-server/issues/6
+                obj.x = obj.x.reverse()
+                obj.y = obj.y.reverse()
+              }
+              obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
               // obj.text = new Array(Object.keys(curr.totals.daily[thisMetric]).length).map((thisText, idx) => `${acc.x[idx]}`)
               // console.info(curr, obj)
               return [ ...acc, obj ]
@@ -344,6 +352,9 @@ return function App (state = defaultState) {
   fieldset.regions {
     height: fit-content;
   }
+  fieldset > legend {
+    font-size: 0.8em;
+  }
   fieldset.regions > div {
     display: inline-block;
     width: 45%;
@@ -352,13 +363,13 @@ return function App (state = defaultState) {
     border: 1px lightgray solid;
   }
   fieldset.sub-fieldset > legend {
-    font-size: 0.6em;
+    font-size: 0.9em
+  }
+  fieldset.sub-fieldset > legend {
+    /* font-size: 0.6em; */
   }
   select {
     width: 100%;
-  }
-  legend {
-
   }
   fieldset.metrics {
     margin: auto;
@@ -451,7 +462,7 @@ return function App (state = defaultState) {
       <summary>Filters (Click to show/hide)</summary>
       <form class="fitler-form">
         <fieldset class="regions">
-          <legend>Choose a region</legend>
+          <legend>Choose a region or subregion</legend>
           <div style="float: left;">
             <fieldset class='sub-fieldset'>
               <legend>Region</legend>
@@ -461,7 +472,9 @@ return function App (state = defaultState) {
           </div>
           <div style="float: right;">
             <fieldset class='sub-fieldset'>
-              <legend>Subregion</legend>
+              <legend>Subregion
+                <label for="toggle-subregions">(show/hide<input type="checkbox" name="toggle-subregions">)</label>
+              </legend>
               <select name="filter-subregions">
               </select>
             </fieldset>
@@ -538,8 +551,10 @@ document.addEventListener("DOMContentLoaded", async(event) => {
       return undefined
     }
   }))
-
-});
+  document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
+    if(!event.target.value) return undefined
+    return app.setFilters('showSubregions', event.target.checked)
+  })
+})
 </script>
-
 </html>
