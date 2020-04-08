@@ -49,9 +49,9 @@ return function App (state = defaultState) {
   }
   this.updateForm = (formSelection = 'Earth') => {
     let locationNode = this.findLocation(formSelection)
-    let updatedState = this.updateState( { formOptions: {region: [ locationNode.name ], subregions: Object.keys(locationNode.subregions) } });
+    let updatedState = this.updateState( { formOptions: {region: [ locationNode.name ], subregions: Object.keys(locationNode.subregions) } })
 
-    ((obj) => {
+    ;((obj) => {
       let regionForm = document.getElementsByName('filter-regions')[0]
       regionForm.options.length = 0
       obj.region.forEach(thisRegion => { regionForm.options.add(new Option(thisRegion, thisRegion, false, false)) })
@@ -61,7 +61,12 @@ return function App (state = defaultState) {
       }
       let subregionForm = document.getElementsByName('filter-subregions')[0]
       subregionForm.options.length = 0
-      obj.subregions.sort().forEach(thisSubregion => { subregionForm.options.add(new Option(thisSubregion, thisSubregion, false, false)) })
+      if(obj.subregions.length === 0) {
+        subregionForm.options.add(new Option('No subregions available', 'Earth', false, false))
+      } else {
+        subregionForm.options.add(new Option('(Select a subregion)', 'Earth', false, false))
+        obj.subregions.sort().forEach(thisSubregion => { subregionForm.options.add(new Option(thisSubregion, thisSubregion, false, false)) })
+      }
     })(updatedState.formOptions)
     return undefined
   }
