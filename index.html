@@ -98,7 +98,7 @@ return function App (state = defaultState) {
     let thisPlotConfig = this.getPlotConfig(type, this.state.filters)
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
     this.state.plot.target(id)
-    Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).then(() => console.info('Chart updated')).catch(err => console.error(err)) // Handle this error some other way later
+    Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later
     // document.querySelector('div.table').remove()
     // document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
@@ -333,23 +333,31 @@ return function App (state = defaultState) {
     font-weight: bold;
     background-color: black;
     border-radius: 0.5em;
-    /* padding: 0.3em; */
   }
   details[open] > summary {
-    /* line-height: 2em; */
-    /* padding: 0.5em; */
     background-color: white;
-    /* border: 1px solid black; */
     border-radius: 0.5em;
   }
   form.fitler-form {
     background: white;
   }
-  fieldset {
-    text-align: center;
+  fieldset.regions {
+    height: fit-content;
+  }
+  fieldset.regions > div {
+    display: inline-block;
+    width: 45%;
+  }
+  fieldset.sub-fieldset {
+    border: 1px lightgray solid;
+  }
+  fieldset.sub-fieldset > legend {
+    font-size: 0.6em;
+  }
+  select {
+    width: 100%;
   }
   legend {
-    text-align: left;
   }
   fieldset.metrics {
     margin: auto;
@@ -441,12 +449,22 @@ return function App (state = defaultState) {
     <details open="true"> 
       <summary>Filters (Click to show/hide)</summary>
       <form class="fitler-form">
-        <fieldset>
+        <fieldset class="regions">
           <legend>Choose a region</legend>
-          <select name="filter-regions" style="width: 45%;">
-          </select>
-          <select name="filter-subregions" style="width: 45%;">
-          </select>
+          <div style="float: left;">
+            <fieldset class='sub-fieldset'>
+              <legend>Region</legend>
+              <select name="filter-regions">
+              </select>
+            </fieldset>
+          </div>
+          <div style="float: right;">
+            <fieldset class='sub-fieldset'>
+              <legend>Subregion</legend>
+              <select name="filter-subregions">
+              </select>
+            </fieldset>
+          </div>
         </fieldset>
         <fieldset class="metrics">
           <legend>Choose a few metrics</legend>
