@@ -16,7 +16,17 @@ const defaultState = {
   data: data[0].data,
   meta: data[1].meta,
   formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
-  filters: {region: ['Earth'], metric: ['cases'], showSubregions: false},
+  filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
+    prettyText: {
+      "cases": "Cases",
+      "deaths": "Deaths",
+      "caseChange": "Daily Case Change (#)",
+      "caseChangePercent": "Daily Case Change (%)",
+      "deathsChange": "Daily Deaths Change (#)",
+      "deathsChangePercent": "Daily Deaths Change (%)",
+      "survivalRate": "Survival Rate (%)"
+    }
+  },
   debug: true,
   plot: { target: (id = 'plot') => { return document.getElementById(id) },
   config: undefined },
@@ -114,7 +124,23 @@ return function App (state = defaultState) {
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
-    plotLayout = { title: `${[filters.metric.slice(0, -1).join(', '), filters.metric.slice(-1)[0]].join(filters.metric.length < 2 ? '' : ' and ')} in ${filters.region[0]}`} // https://stackoverflow.com/a/16251861/5935694
+    plotLayout = { title: this.state.filters.metric
+      .map(thisMetric => this.state.filters.prettyText[thisMetric])
+      .sort((a, b) => a.localeCompare(b))
+      .reduce((acc, curr, currIdx, origArr) => { // Really didn't get creative here because I didn't want to mess up the titles. Conditionals for the win!
+        if(currIdx === 0) acc = `${curr}`
+        if(origArr.length === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
+        if(origArr.length === 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
+        if(origArr.length === 2 && currIdx === 0) return acc
+        if(origArr.length === 2 && currIdx === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` and ${curr} in ${this.state.filters.region[0]}`
+        if(origArr.length === 2 && currIdx === 1 && this.state.filters.region[0] === 'Earth') return acc + ` and ${curr} on ${this.state.filters.region[0]}`
+        if(origArr.length >= 2 && currIdx === origArr.length - 1) acc = acc + `, and ${curr}`
+        if(currIdx === origArr.length - 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
+        if(currIdx === origArr.length - 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
+        if(origArr.length >= 2 && currIdx !== origArr.length - 1 && currIdx > 0) acc = acc + `, ${curr}`
+        return acc
+      }, '')
+    },
     plotLayout = { 
       ...plotLayout,
       font: {
@@ -545,7 +571,7 @@ If you do not believe that's the situation, please report an issue (use the link
                 <fieldset class='sub-fieldset'>
                   <legend>Derived Metrics</legend>
                   <div>
-                    <label class="metric-checkbox">Case Change
+                    <label class="metric-checkbox">Daily Case Change (#)
                       <input type="checkbox" value="caseChange" name="cases">
                     </label>
                   </div>
