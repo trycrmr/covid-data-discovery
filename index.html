@@ -16,7 +16,7 @@ const defaultState = {
   data: data[0].data,
   meta: data[1].meta,
   formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
-  filters: {region: ['Earth'], metric: ['cases']},
+  filters: {region: ['Earth'], metric: ['cases'], showSubregions: false},
   debug: true,
   plot: { target: (id = 'plot') => { return document.getElementById(id) },
   config: undefined },
@@ -129,17 +129,17 @@ return function App (state = defaultState) {
     switch(type) {
 
       case 'time series':
+        const timeFormat = {year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
         let locationNode = this.findLocation(this.state.filters.region[0])
-
-        let locationNodes = Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion])] : [ locationNode ]
-
+        let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion])] : [ locationNode ]
+        //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
         plotData = this.state.filters.metric.map(thisMetric => {
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
             // if(!curr.name) console.info('=========>', curr)
             try {
               let obj = { x: [], y: [], text: [], type: 'scatter', name: `${thisMetric}-${curr.name}` }
-              obj.x = Object.keys(curr.totals.daily[thisMetric])[0] === '1/22/20' ? [ ...Object.keys(curr.totals.daily[thisMetric]) ] : [ ...Object.keys(curr.totals.daily[thisMetric]).reverse() ]
-              obj.y = Object.keys(curr.totals.daily[thisMetric])[0] === '1/22/20' ? [ ...Object.values(curr.totals.daily[thisMetric]) ] : [ ...Object.values(curr.totals.daily[thisMetric]).reverse() ]
+              obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).reverse() ].map(thisUnixEpoch => new Date(parseInt(thisUnixEpoch)).toLocaleDateString(undefined, timeFormat))
+              obj.y = [ ...Object.values(curr.totals.daily[thisMetric]).reverse() ]
               // obj.text = new Array(Object.keys(curr.totals.daily[thisMetric]).length).map((thisText, idx) => `${acc.x[idx]}`)
               // console.info(curr, obj)
               return [ ...acc, obj ]
@@ -358,6 +358,7 @@ return function App (state = defaultState) {
     width: 100%;
   }
   legend {
+
   }
   fieldset.metrics {
     margin: auto;
