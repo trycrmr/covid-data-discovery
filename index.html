@@ -136,6 +136,7 @@ return function App (state = defaultState) {
         let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
         //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
         plotData = this.state.filters.metric.map(thisMetric => {
+          let locationsWithoutData = []
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
             // if(!curr.name) console.info('=========>', curr)
             try {
@@ -147,9 +148,30 @@ return function App (state = defaultState) {
                 obj.x = obj.x.reverse()
                 obj.y = obj.y.reverse()
               }
+
+              if((thisMetric === 'caseChangePercent' || thisMetric === 'deathsChangePercent')) { // When deriving these metrics the first day of a time series, I guess, technically, would be 100% change from the previous day, which is effectively zero. This skews the plots, especially when the percent change should approach zero. Handling this on the back-end when the derived calculations are generated wouldn't work because null values are type cast to zero when generating the aggregates. That necessitates this hard check and setting the first value if it's a percent aggregate and the percent aggregate is 100 (i.e. 100%)
+                let i = 0
+                while(i < obj.y.length) { // A little nervous about the while loop with performance, but so far no noticeable loss on local development. 
+                  if( (!+(obj.y[i]) || obj.y[i] === "0.00" ) || obj.y[i] === "100.00") { // Woof. If the value when type cast to a number is falsy OR the it's equal to "0.00" (a legitimate value) set it to null. ALSO if the value is "100.00" it's the first day of counts were recorded, but that messes up the visualization, so set that one to null too. Oof. 
+                    obj.y[i] = null
+                    i++
+                    if(i === obj.y.length) locationsWithoutData.sort().push(curr.name)
+                  } else {
+                    break
+                  }
+                }
+              } 
               obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
               // obj.text = new Array(Object.keys(curr.totals.daily[thisMetric]).length).map((thisText, idx) => `${acc.x[idx]}`)
               // console.info(curr, obj)
+              if(locationsWithoutData.length > 0 && locationNodes.length === 1) alert(`
+${curr.name} does not have any ${thisMetric} data. This is okay! 
+
+It means this is either the first day cases or deaths were recorded for ${curr.name} and a percentage-based derived metric is selected or there haven't been any cases or deaths of COVID-19 reported so far! 
+
+If you do not believe that's the situation, please report an issue (use the link at the top of the page) with the filters (i.e metrics & locations) you have selected.
+              `)
+              //^ This is for all the lovely people in Ouray, Colorado :-) . Sorry about reporting your first case on April 6th.
               return [ ...acc, obj ]
             } catch(err) {
               console.error(err)
@@ -481,26 +503,51 @@ return function App (state = defaultState) {
           </div>
         </fieldset>
         <fieldset class="metrics">
-          <legend>Choose a few metrics</legend>
-          <div>
-            <label class="metric-checkbox selected">Cases
-              <input type="checkbox" value="cases" name="cases" checked>
-            </label>
+          <legend>Choose a few metrics and derived metrics</legend>
+          <div style="float: left;">
+            <fieldset class='sub-fieldset'>
+              <legend>Metrics</legend>
+              <div>
+                <label class="metric-checkbox selected">Cases
+                  <input type="checkbox" value="cases" name="cases" checked>
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Deaths
+                  <input type="checkbox" value="deaths" name="deaths">
+                </label>
+              </div>
+            </fieldset>
           </div>
-          <div style="display:none;"> <!--Hidden because JHU doesn't report recovered cases as change over time -->
-            <label class="metric-checkbox">Recovered
-              <input type="checkbox" value="recovered" name="recovered">
-            </label>
-          </div>
-          <div style="display:none;"> <!--Hidden because currently the critical metric has non-zero values in three provinces in China, and that's it.-->
-            <label class="metric-checkbox">Critical
-              <input type="checkbox" value="critical" name="critical">
-            </label>
-          </div>
-          <div>
-            <label class="metric-checkbox">Deaths
-              <input type="checkbox" value="deaths" name="deaths">
-            </label>
+          <div style="float: right;">
+            <fieldset class='sub-fieldset'>
+              <legend>Derived Metrics</legend>
+              <div>
+                <label class="metric-checkbox">Case Change
+                  <input type="checkbox" value="caseChange" name="cases">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Case Change (%)
+                  <input type="checkbox" value="caseChangePercent" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (#)
+                  <input type="checkbox" value="deathsChange" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (%)
+                  <input type="checkbox" value="deathsChangePercent" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Survival Rate (%)
+                  <input type="checkbox" value="survivalRate" name="deaths">
+                </label>
+              </div>
+            </fieldset>
           </div>
         </fieldset>
       </form>
