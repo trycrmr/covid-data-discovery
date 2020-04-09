@@ -151,7 +151,7 @@ return function App (state = defaultState) {
       autosize: false,
       width: parseFloat(getComputedStyle(this.state.plot.target()).width),
       // height: window.innerHeight - (document.querySelector('header').offsetHeight + document.querySelector('.sticky-form').offsetHeight),
-      height: window.innerHeight - (document.querySelector('header').offsetHeight) - 72,
+      height: window.innerHeight - (document.querySelector('header').offsetHeight) - 72 > 600 ? window.innerHeight - (document.querySelector('header').offsetHeight) - 72 : 600,
       // height needs to be set dynamically based on the number of items on the x-axis to allow it to dynamically extend vertically with an unobtrusive distance between ticks
       yaxis: { 
         tickfont: { size: currentFontSize }, 
