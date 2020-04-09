@@ -148,7 +148,7 @@ return function App (state = defaultState) {
         size: getComputedStyle(document.getElementById('plot')).fontSize,
         color: getComputedStyle(document.getElementById('plot')).color
       },
-      autosize: false, 
+      autosize: false,
       width: parseFloat(getComputedStyle(this.state.plot.target()).width),
       // height: window.innerHeight - (document.querySelector('header').offsetHeight + document.querySelector('.sticky-form').offsetHeight),
       height: window.innerHeight - (document.querySelector('header').offsetHeight) - 72,
@@ -172,7 +172,7 @@ return function App (state = defaultState) {
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
             // if(!curr.name) console.info('=========>', curr)
             try {
-              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', name: `${curr.name}` }
+              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off */ }
               // if(this.state.filters.region[0] === locationNode.name) obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]) ].map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat))
               obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
               obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
@@ -215,6 +215,8 @@ If you do not believe that's the situation, please report an issue (use the link
         plotLayout = { ...plotLayout, 
           ...{
             // hovermode: 'closest', // Hover will only show the closest point to the cursor, instead of all the points on that part of the x-axis
+            showLegend: true,
+            legend: { "orientation": 'h', x: 0, y: 1.05 },
             xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
               ...plotLayout.xaxis,
               mirror: 'allticks',
