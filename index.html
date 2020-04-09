@@ -196,8 +196,7 @@ return function App (state = defaultState) {
               obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
               // obj.text = new Array(Object.keys(curr.totals.daily[thisMetric]).length).map((thisText, idx) => `${acc.x[idx]}`)
               // console.info(curr, obj)
-              if(locationsWithoutData.length > 0 && locationNodes.length === 1) alert(`
-${curr.name} does not have any ${thisMetric} data. This is okay! 
+              if(locationsWithoutData.length > 0 && locationNodes.length === 1) alert(`${curr.name} does not have any ${this.state.filters.prettyText[thisMetric]} data. This is okay! 
 
 It means this is either the first day cases or deaths were recorded for ${curr.name} and a percentage-based derived metric is selected or there haven't been any cases or deaths of COVID-19 reported so far! 
 
