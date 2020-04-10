@@ -638,7 +638,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, max-age=0'
+      'Cache-Control': 'public, max-age=0, max-stale=43200, stale-while-revalidate=0' // The intent is for all the data to be cached anywhere ("public"), immediately consider the resource received as stale ("max-age=0"), only cache the stale resource for 12 hours ("max-stale=43200"), and (if on a browser that has implemented "stale-while-revalidate") make a network request in the background to update the cache with the new resource (if there is one). I *think*, for subsequent visits to the page within 12 hours on any browser the client will have some data it's okay using and won't need to fetch new state over the network, but it will also check anyways. Folks who want the latest data will need to clear their local cache and hard refresh. If the CDN's default TTL is set to 12 hours, and data updates are being made once a day, than within a 24 hour span a user's client should receive the new daily load of data in every case (device, browser, timing, etc.). 
     },
   })
   const app = new (init(thisData)) // returns and instance of App
