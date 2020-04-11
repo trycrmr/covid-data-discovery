@@ -163,7 +163,7 @@ return function App (state = defaultState) {
     switch(type) {
 
       case 'time series':
-        const timeFormat = {year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
+        const timeFormat = {month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
         let locationNode = this.findLocation(this.state.filters.region[0])
         let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
         //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
@@ -215,11 +215,11 @@ If you do not believe that's the situation, please report an issue (use the link
           ...{
             // hovermode: 'closest', // Hover will only show the closest point to the cursor, instead of all the points on that part of the x-axis
             showLegend: true,
-            legend: { "orientation": 'h', x: 0, y: 1.05 },
+            legend: { "orientation": 'h', x: 0, y: 0 },
             xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
               ...plotLayout.xaxis,
               mirror: 'allticks',
-              side: 'bottom',
+              side: plotData.length > 1 ? 'top' : 'bottom',
               fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
               showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
               tickformat: ','
