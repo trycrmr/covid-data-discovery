@@ -47,7 +47,7 @@ const defaultState = {
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
   this.state = state
-  this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {dateStyle: 'full', timeStyle: 'full'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
+  this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZoneName: 'short'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
   this.updateState = (newState) => {
     if(!(JSON.stringify(this.state) === JSON.stringify({ ...this.state, ...newState }))) {
       if(this.state.debug) {
@@ -327,6 +327,8 @@ If you do not believe that's the situation, please report an issue (use the link
     margin: 0.2em auto;
   }
   header {
+    margin: auto;
+    max-width: 1000px;
     text-align: center;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -537,8 +539,8 @@ If you do not believe that's the situation, please report an issue (use the link
   <header>
     <h1>COVID Data Website</h1>
     <h4>The latest data visualized in a mobile-friendly, fast, accessible, and <a href="https://github.com/trycrmr/covid-data-discovery/blob/master/CONTRIBUTING.md" target="_blank" rel="noreferrer noopener" alt="Link to how to contribute to coviddata.website">community-driven</a> manner. <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an "issue"</a> with any trouble or opinions.</h4>
-    <h5 class="last-updated">Last updated: [timestamp loading...]</h5>
-    <h5><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code the used the JHU raw data to create Global aggregates">code</a>)<span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><br />Worth noting, the metrics on <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt="Johns Hopkins Center for Systems Science and Engineering dashboard of their COVID-19 metrics">JHUCSSE's Dashboard</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close.
+    <h6><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><span class="last-updated">Last updated: [timestamp loading...]</span></h6>
+    <h6><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code that uses the JHU raw data to create Global aggregates.">code</a>). Note that the metrics on <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt="Johns Hopkins Center for Systems Science and Engineering dashboard of their COVID-19 metrics">JHUCSSE's Dashboard</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close. Updated daily shortly after JHUCSSE's updates. 
     </h6>
   </header>
   <hr />
