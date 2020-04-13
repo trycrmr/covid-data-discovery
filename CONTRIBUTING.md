@@ -16,7 +16,8 @@
 6. Open all PRs into master of the upstream repo. Must maintain feature & performance parity. No PRs that vary from the branch naming convention or have merge conflicts with master will be accepted as well.
 7. Your PR will be reviewed shortly. In the meantime, repeat steps #5 & #6! 
 
-- Consider contributing to the data loader codebase, https://github.com/trycrmr/covid-data-loader that generates the cuts of json for https://coviddata.website. 
+- Consider contributing to the data loader codebase, https://github.com/trycrmr/covid-data-loader that generates the cuts of JSON for https://coviddata.website.
+- Consider deploying a fork of this codebase with your own opinions/branding/etc built in. The codebase and the data loader are licensed MIT. In my opinion it's more important to inform as many folks as possible than shoehorn the data and supporting software into some sort of proprietary, profiteering business model. So take the codebase, customize it, use it, and share the result.
 
 ## Remember
 COVID-19 impacts everyone, everywhere. The internet can't reach everyone, everywhere, but those it can reach are definitely going to be able to use this site.
