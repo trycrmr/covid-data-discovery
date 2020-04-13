@@ -114,8 +114,8 @@ return function App (state = defaultState) {
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
     this.state.plot.target(id)
     Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later
-    // document.querySelector('div.table').remove()
-    // document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+    document.querySelector('div.table').remove()
+    document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
   }
   this.getPlotConfig = (type = 'time series', filters = this.state.filters, plotLayout = undefined) => {
@@ -244,9 +244,9 @@ If you do not believe that's the situation, please report an issue (use the link
     let metricCount = data.length
     let rows = '<tbody>'
     for (let i = 0; i < dataPointCount; i++) {
-      rows += `<tr><th>${data[0].y[i]}</th>`
+      rows += `<tr><th>${data[0].x[i]}</th>`
       for (let j = 0; j < metricCount; j++) {
-        rows += `<td>${data[j].x[i]}</td>`
+        rows += `<td>${data[j].y[i]}</td>`
         if(metricCount - 1 === j) rows += `</tr>`
       }
     }
@@ -422,15 +422,19 @@ If you do not believe that's the situation, please report an issue (use the link
   .table {
     margin: 1em;
     height: fit-content;
-    /* overflow-x: scroll; */
+    overflow-x: scroll;
   }
   table {
     table-layout: auto;
     border-collapse: collapse;
     border: 1px solid black;
   }
+  table caption {
+    text-align: left;
+  }
   th, td, tr {
     border: 1px solid black;
+    min-width: 50px;
   }
   div.open-an-issue {
     position: -webkit-sticky;
