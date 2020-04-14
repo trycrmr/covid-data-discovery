@@ -566,12 +566,12 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  const thisData = await getData('data.json', {
+  const thisData = await getData('data.json.gz', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache, max-age=0',
-      'Accept-Encoding': 'gzip'
+      'Accept-Encoding': 'gzip;q=9.0'
     },
   })
   const app = new (init(thisData)) // returns and instance of App
