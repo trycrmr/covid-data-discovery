@@ -570,7 +570,8 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, max-age=0'
+      'Cache-Control': 'no-cache, max-age=0',
+      'Accept-Encoding': 'gzip'
     },
   })
   const app = new (init(thisData)) // returns and instance of App
