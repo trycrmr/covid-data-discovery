@@ -6,12 +6,10 @@
   <title>COVID Data Website</title>
   <meta name="description" content="COVID-19 Data Discovery">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <!-- <script type="text/javascript" src="index.js"></script> -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js" async></script>
   <script type="text/javascript">
 const init = (data) => {
 
-// var data = JSON.stringify(data)
 const defaultState = { 
   data: data[0].data,
   meta: data[1].meta,
@@ -35,7 +33,7 @@ const defaultState = {
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
   this.state = state
-  this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {dateStyle: 'full', timeStyle: 'full'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
+  this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZoneName: 'short'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
   this.updateState = (newState) => {
     if(!(JSON.stringify(this.state) === JSON.stringify({ ...this.state, ...newState }))) {
       if(this.state.debug) {
@@ -116,8 +114,8 @@ return function App (state = defaultState) {
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
     this.state.plot.target(id)
     Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later
-    // document.querySelector('div.table').remove()
-    // document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+    document.querySelector('div.table').remove()
+    document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
   }
   this.getPlotConfig = (type = 'time series', filters = this.state.filters, plotLayout = undefined) => {
@@ -127,7 +125,7 @@ return function App (state = defaultState) {
     plotLayout = { title: this.state.filters.metric
       .map(thisMetric => this.state.filters.prettyText[thisMetric])
       .sort((a, b) => a.localeCompare(b))
-      .reduce((acc, curr, currIdx, origArr) => { // Really didn't get creative here because I didn't want to mess up the titles. Conditionals for the win!
+      .reduce((acc, curr, currIdx, origArr) => { // Really didn't get creative here code-wise because I didn't want to mess up and edge cases with the titles. Conditionals for the win!
         if(currIdx === 0) acc = `${curr}`
         if(origArr.length === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
         if(origArr.length === 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
@@ -150,30 +148,26 @@ return function App (state = defaultState) {
       },
       autosize: false,
       width: parseFloat(getComputedStyle(this.state.plot.target()).width),
-      // height: window.innerHeight - (document.querySelector('header').offsetHeight + document.querySelector('.sticky-form').offsetHeight),
       height: window.innerHeight - (document.querySelector('header').offsetHeight) - 72 > 600 ? window.innerHeight - (document.querySelector('header').offsetHeight) - 72 : 600,
-      // height needs to be set dynamically based on the number of items on the x-axis to allow it to dynamically extend vertically with an unobtrusive distance between ticks
+      // height needs to be set dynamically based on the screen size and height of other items on the screen. Ideally, when the filters are hidden, the bottom of the chart should be just above the fold. 
       yaxis: { 
         tickfont: { size: currentFontSize }, 
-        // autorange: 'reversed' 
       }
     }
     if(this.state.filters.metric.length > 1) plotLayout = { ...plotLayout, barmode: 'group'  }
     let plotData = undefined
-    switch(type) {
-
+    switch(type) { // Written as a switch keeping the future feature open to allow the user to select different types of charts. Tough to ensure the UI looks decent between each of the charts with all the cuts of the metrics over time, but it's possible. 
       case 'time series':
-        const timeFormat = {year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
+        const timeFormat = {month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
         let locationNode = this.findLocation(this.state.filters.region[0])
         let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
         //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
         plotData = this.state.filters.metric.map(thisMetric => {
           let locationsWithoutData = []
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
-            // if(!curr.name) console.info('=========>', curr)
             try {
-              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off */ }
-              // if(this.state.filters.region[0] === locationNode.name) obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]) ].map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat))
+              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
+              if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
               obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
               obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
               if(parseInt(obj.x[0]) > parseInt(obj.x[1])) { // band aid fix to preserve order. Date to metric key-value pairs are stored as a hashmap and that's making it real tough to ensure the order. https://github.com/trycrmr/covid-data-batch-server/issues/6
@@ -194,15 +188,13 @@ return function App (state = defaultState) {
                 }
               } 
               obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
-              // obj.text = new Array(Object.keys(curr.totals.daily[thisMetric]).length).map((thisText, idx) => `${acc.x[idx]}`)
-              // console.info(curr, obj)
               if(locationsWithoutData.length > 0 && locationNodes.length === 1) alert(`${curr.name} does not have any ${this.state.filters.prettyText[thisMetric]} data. This is okay! 
 
 It means this is either the first day cases or deaths were recorded for ${curr.name} and a percentage-based derived metric is selected or there haven't been any cases or deaths of COVID-19 reported so far! 
 
 If you do not believe that's the situation, please report an issue (use the link at the top of the page) with the filters (i.e metrics & locations) you have selected.
               `)
-              //^ This is for all the lovely people in Ouray, Colorado :-) . Sorry about reporting your first case on April 6th.
+              //^ This is for all the lovely people in Ouray, Colorado :-) . Sorry about reporting your first case on April 6th, and your first death around April 10th :-( . Use the state of Wyoming, select all the metrics, and show subregions to test instead. 
               return [ ...acc, obj ]
             } catch(err) {
               console.error(err)
@@ -213,13 +205,13 @@ If you do not believe that's the situation, please report an issue (use the link
 
         plotLayout = { ...plotLayout, 
           ...{
-            // hovermode: 'closest', // Hover will only show the closest point to the cursor, instead of all the points on that part of the x-axis
+            // hovermode: 'closest', // Hover will only show the closest point to the cursor, instead of all the points on that part of the x-axis. Leaving option for reference and to toggle for UX experiments on occasion. 
             showLegend: true,
-            legend: { "orientation": 'h', x: 0, y: 1.05 },
+            legend: { "orientation": 'h', x: 0, y: 0 },
             xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
               ...plotLayout.xaxis,
               mirror: 'allticks',
-              side: 'bottom',
+              side: plotData.length > 1 ? 'top' : 'bottom',
               fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
               showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
               tickformat: ','
@@ -231,40 +223,6 @@ If you do not believe that's the situation, please report an issue (use the link
           }  
         }
         break
-          
-      case 'bar': // Old bar chart. At the moment this isn't used in favor of the change over time charts
-        let filterForRegion = this.state.data[filters.region[0]].regions // eventually could be written to handle multiple selections at once
-        plotData = this.state.filters.metric.map(thisMetric => {
-          return filterForRegion.reduce((acc, curr) => {
-            if(!acc.name) acc.name = thisMetric 
-            acc.x.push(curr[thisMetric]) 
-            acc.y.push(curr.country) // 'country' is the key for whatever the location is called (region, country, subregion, etc.)
-            acc.text.push(curr[thisMetric])
-            return acc
-          }, { x: [], y: [], text: [], name: undefined, type: 'bar', orientation: 'v', textposition: 'outside', cliponaxis: false, hoverinfo: 'x+y' })
-        })
-        calculatedHeight = currentFontSize * plotData[0].y.length * 3 // Twice the default font size multiplied by the number of data points on the y-axis
-        calculatedMarginWidth = Math.max.apply(null, plotData[0].y.map(label => label.length)) < 20 ? currentFontSize / 2 * Math.max.apply(null, plotData[0].y.map(label => label.length)) : currentFontSize / 2 * 20 // Sets a max because otherwise the labels can take up a significant amount of the space from the visualization, making the vizualization look tiny on mobile and crunching the x-axis labels. Word wrapping the labels would help fix this, but idk how to do that right now. The usually CSS bits don't seem to do it. Only five countries would be cut off at greater than 20 characters: "Tanzania, United Republic of", "Central African Republic", "Turks and Caicos Islands", "British Virgin Islands", and "Saint Vincent and the Grenadines"
-        plotLayout = { ...plotLayout, 
-          ...{ 
-            height: calculatedHeight > window.innerHeight ? calculatedHeight : window.innerHeight , // dynamically set the height of the target div based on the amount of data to be displayed. This enables dynamically sizing the graph vertically to, hopefully, a comfortable viewing experience. Multiplying the fontsize by two seems to be the sweet spot where no labels are hidden by each other and all bars show ¯\_(ツ)_/¯
-            margin: { l: calculatedMarginWidth },
-            xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
-              ...plotLayout.xaxis,
-              mirror: 'allticks',
-              side: 'top',
-              fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
-              showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
-              tickformat: ','
-            },
-            yaxis: { ...plotLayout.yaxis,
-              fixedrange: true,
-              showspikes: true,
-            }
-          }  
-        }
-        break
-
       default:
         plotData = [
           {
@@ -287,9 +245,9 @@ If you do not believe that's the situation, please report an issue (use the link
     let metricCount = data.length
     let rows = '<tbody>'
     for (let i = 0; i < dataPointCount; i++) {
-      rows += `<tr><th>${data[0].y[i]}</th>`
+      rows += `<tr><th>${data[0].x[i]}</th>`
       for (let j = 0; j < metricCount; j++) {
-        rows += `<td>${data[j].x[i]}</td>`
+        rows += `<td>${data[j].y[i]}</td>`
         if(metricCount - 1 === j) rows += `</tr>`
       }
     }
@@ -315,6 +273,8 @@ If you do not believe that's the situation, please report an issue (use the link
     margin: 0.2em auto;
   }
   header {
+    margin: auto;
+    max-width: 1000px;
     text-align: center;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -386,7 +346,6 @@ If you do not believe that's the situation, please report an issue (use the link
     text-align: center;
     font-size: 1em;
     padding: 0.3em 0.3em;
-    /* margin-top: 0.2em; */
     cursor: pointer;
   }
   details summary::-webkit-details-marker {
@@ -418,12 +377,6 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   fieldset.sub-fieldset {
     border: 1px lightgray solid;
-  }
-  fieldset.sub-fieldset > legend {
-    /* font-size: 0.9em */
-  }
-  fieldset.sub-fieldset > legend {
-    /* font-size: 0.6em; */
   }
   select {
     width: 100%;
@@ -470,15 +423,19 @@ If you do not believe that's the situation, please report an issue (use the link
   .table {
     margin: 1em;
     height: fit-content;
-    /* overflow-x: scroll; */
+    overflow: auto;
   }
   table {
     table-layout: auto;
     border-collapse: collapse;
     border: 1px solid black;
   }
+  table caption {
+    text-align: left;
+  }
   th, td, tr {
     border: 1px solid black;
+    min-width: 50px;
   }
   div.open-an-issue {
     position: -webkit-sticky;
@@ -497,24 +454,11 @@ If you do not believe that's the situation, please report an issue (use the link
     fieldset {
       font-size: 0.8em !important /* lazy, probably breaks something */
     }
-  /* label.metric-checkbox {
-    display: inline-block;
-    width: 49%;
-    height: 100%;
-    border-radius: 0px;
-    padding: 0px;
-    border: 0px;
-    text-align-last: center;
-    margin: 0px;
-  }
-  fieldset.metrics div {
-    display: inline;
-  } */
 }
 </style>
 
 <body>
-  <div class="sticky-nav" id="top" style="display:none;">
+  <div class="sticky-nav">
     <nav class="header">
       <ul>
         <li><a href="#table">Jump to Table</a></li>
@@ -522,11 +466,11 @@ If you do not believe that's the situation, please report an issue (use the link
       </ul>
     </nav>
   </div>
-  <header>
+  <header id="top">
     <h1>COVID Data Website</h1>
     <h4>The latest data visualized in a mobile-friendly, fast, accessible, and <a href="https://github.com/trycrmr/covid-data-discovery/blob/master/CONTRIBUTING.md" target="_blank" rel="noreferrer noopener" alt="Link to how to contribute to coviddata.website">community-driven</a> manner. <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an "issue"</a> with any trouble or opinions.</h4>
-    <h5 class="last-updated">Last updated: [timestamp loading...]</h5>
-    <h5><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code the used the JHU raw data to create Global aggregates">code</a>)<span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><br />Worth noting, the metrics on <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt="Johns Hopkins Center for Systems Science and Engineering dashboard of their COVID-19 metrics">JHUCSSE's Dashboard</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close.
+    <h6><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><span class="last-updated">Last updated: [timestamp loading...]</span></h6>
+    <h6><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code that uses the JHU raw data to create Global aggregates.">code</a>). Note that the metrics on <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt="Johns Hopkins Center for Systems Science and Engineering dashboard of their COVID-19 metrics">JHUCSSE's Dashboard</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close. Updated daily shortly after JHUCSSE's updates. 
     </h6>
   </header>
   <hr />
