@@ -576,11 +576,12 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     }
   }
 
-  const thisData = await getData('data.json', {
+  const thisData = await getData('data.json.gz', {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=43200' // Allow the local cache (well, any cache) to keep this data around for 12 hours. 
+      'Cache-Control': 'public, max-age=43200', // Allow the local cache (well, any cache) to keep this data around for 12 hours. 
+      'Accept-Encoding': 'gzip;q=9.0'
     },
   })
   const app = new (init(thisData)) // returns and instance of App
