@@ -6,30 +6,31 @@
   <title>COVID Data Website</title>
   <meta name="description" content="COVID-19 Data Discovery">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<!--   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> -->
   <script type="text/javascript">
-const init = (data) => {
 
-const defaultState = { 
-  data: data[0].data,
-  meta: data[1].meta,
-  formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
-  filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
-    prettyText: {
-      "cases": "Cases",
-      "deaths": "Deaths",
-      "caseChange": "Daily Case Change (#)",
-      "caseChangePercent": "Daily Case Change (%)",
-      "deathsChange": "Daily Deaths Change (#)",
-      "deathsChangePercent": "Daily Deaths Change (%)",
-      "survivalRate": "Survival Rate (%)"
-    }
-  },
-  debug: true,
-  plot: { target: (id = 'plot') => { return document.getElementById(id) },
-  config: undefined },
-  listeners: []
-}
+const init = () => {
+  const defaultState = { 
+    data: null,
+    meta: null,
+    Plotly: null,
+    formOptions: { region: ['Earth'], subregions: null },  
+    filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
+      prettyText: {
+        "cases": "Cases",
+        "deaths": "Deaths",
+        "caseChange": "Daily Case Change (#)",
+        "caseChangePercent": "Daily Case Change (%)",
+        "deathsChange": "Daily Deaths Change (#)",
+        "deathsChangePercent": "Daily Deaths Change (%)",
+        "survivalRate": "Survival Rate (%)"
+      }
+    },
+    debug: true,
+    plot: { target: (id = 'plot') => { return document.getElementById(id) },
+    config: undefined },
+    listeners: []
+  }  
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
   this.state = state
@@ -54,6 +55,75 @@ return function App (state = defaultState) {
     } else {
       return this.state
     }
+  }
+  this.updateLoadingUI = async (obj) => { // {num, total, name}
+    const loadingUI = document.querySelector(`.${obj.name}`)
+    const num = Math.floor(Number(obj.num) / 1000)
+    const total = Math.floor(Number(obj.total) / 1000)
+    const percent = Math.floor((num/total) * 100) 
+    if(loadingUI) {
+      if(obj.num === obj.total) {
+        loadingUI.innerText = `Fetching ${obj.name}: Complete.` 
+      } else {
+        loadingUI.innerText = `Fetching ${obj.name}: ${percent}% (${num}kb / ${total}kb)` 
+      }
+    } else {
+      document.querySelector('.loading').append(`<span class="load-progress ${obj.name}">Fetching ${percent}% (${num}kb / ${total}kb)</span>`)
+    }
+  }
+  this.updateFetchProgress = async (fetchObj) => {
+    try {
+      const decoder = new TextDecoder('utf-8')
+      const response = await fetch(fetchObj.url, fetchObj.options);
+      if(!response.ok) throw new Error(`Issue fetching ${fetchObj.prettyName}: ${response.statusText}`)
+      const total = Number(response.headers.get('File-Size'));
+      const contentType = response.headers.get('content-type');
+
+      const reader = response.body.getReader(); // Grabbed this from stack overflow and stumbled into the world of handling streams. Did some learnin', for sure.
+      let bytesReceived = 0;
+      let body = ''
+      let eventCount = 0
+      while (true) {
+        const result = await reader.read()
+        if (result.done) {
+          this.updateLoadingUI({num: total, total, name: fetchObj.prettyName})          
+          if (!contentType || !contentType.includes('application/json')) {
+            return eval(body) // Umm...eval is pretty unsafe if you're not 100% sure of the content it's evaluating. Running eval on all network calls seems like a pretty bad idea. Refactor this to use a writeable stream to get the result of the network call into a variable that's returned, or something like that. For now...it'll be served over HTTPS from only private resources I own...so...safe enough? Oof. Bad. Don't @ me. 
+          } else {
+            return eval(body)
+          }
+          break;
+        }
+        bytesReceived += result.value.byteLength;
+        if(eventCount % 10 === 0 && eventCount > 0) {
+          this.updateLoadingUI({num: bytesReceived, total, name: fetchObj.prettyName})
+          eventCount++
+        } else {
+          eventCount++
+        }
+        body += decoder.decode(result.value)
+      }
+    } catch(err) {
+      console.error(err)
+      throw err
+    }
+  }
+  this.fetchAll = async (arrOfFetches) => { // [{ url, options, prettyName: 'Data' }, { url, options, prettyName: 'Charts' }...]
+    return Promise.all(
+      arrOfFetches.map( async thisFetch => { 
+        try {
+          let result = await this.updateFetchProgress(thisFetch)
+          return result
+        } catch(err) {
+          throw err
+        }
+      })
+    )
+    .catch(err => { alert(`Failed to load some necessary ingredients; Try reloading the page, then checking your internet connection. If the problem persists, report the issue at https://github.com/trycrmr/covid-data-discovery/issues
+
+For those interested, this is what happened: 
+
+${err}`) } ) // So if something weird happens over the network that results in a 4xx or 5xx tell the user about it and let them know what to do next.
   }
   this.updateForm = (formSelection = 'Earth') => {
     let locationNode = this.findLocation(formSelection)
@@ -290,7 +360,7 @@ If you do not believe that's the situation, please report an issue (use the link
     z-index: 999;
   }
   .sticky-form {
-    position: -webkit-sticky; 
+    position: -webkit-sticky;
     position: sticky;
     top: 1em;
     margin: auto;
@@ -298,6 +368,7 @@ If you do not believe that's the situation, please report an issue (use the link
     max-width: 780px;
     width: 100%;
     z-index: 999;
+    background-color: whitesmoke;
   }
   nav {
     position: -webkit-sticky;
@@ -387,15 +458,11 @@ If you do not believe that's the situation, please report an issue (use the link
     height: fit-content;
   }
   fieldset.metrics div {
-    /* display: inline-block; */
     display: inline;
   }
   label.metric-checkbox {
     line-height: 2em;
-    /* padding: 0.5em; */
     background-color: white;
-    /* border: 1px solid black; */
-    /* border-radius: 0.5em; */
     cursor: pointer;
 
     display: inline-block;
@@ -455,6 +522,26 @@ If you do not believe that's the situation, please report an issue (use the link
       font-size: 0.8em !important /* lazy, probably breaks something */
     }
 }
+div.loading {
+  background-color: white;
+  position: fixed;
+  height: 100px;
+  width: 100%;
+  top: 30%;
+  background: white;
+  z-index: 1000;
+}
+div.loading > .load-progress {
+  background-color: white;
+  margin: auto;
+  margin-top: 1em;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: fit-content;
+  text-align: center;
+  font-size: 1.5em;
+}
 </style>
 
 <body>
@@ -466,6 +553,10 @@ If you do not believe that's the situation, please report an issue (use the link
       </ul>
     </nav>
   </div>
+  <div class="loading">
+    <span class="load-progress Data">Fetching Data: 0%</span>
+    <span class="load-progress Charts">Fetching Charts: 0%</span>
+  </div>
   <header id="top">
     <h1>COVID Data Website</h1>
     <h4>The latest data visualized in a mobile-friendly, fast, accessible, and <a href="https://github.com/trycrmr/covid-data-discovery/blob/master/CONTRIBUTING.md" target="_blank" rel="noreferrer noopener" alt="Link to how to contribute to coviddata.website">community-driven</a> manner. <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an "issue"</a> with any trouble or opinions.</h4>
@@ -474,7 +565,7 @@ If you do not believe that's the situation, please report an issue (use the link
     </h6>
   </header>
   <hr />
-  <div class="sticky-form" id="top">
+  <div class="sticky-form" id="top" style="opacity: 0;">
     <details open="true"> 
       <summary>Filters (Click to show/hide)</summary>
       <form class="fitler-form">
@@ -556,29 +647,42 @@ If you do not believe that's the situation, please report an issue (use the link
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", async(event) => {
-  const getData = async(url, config) => {
-    try {
-      const data = await fetch(url, config)
-      const jsonData = await data.json()
-      return jsonData
-    } catch (err) {
-      console.error(err)
-    }
+  const app = new (await init()) // returns and instance of App
+
+// [{ url, options, prettyName: 'Data' }, { url, options, prettyName: 'Charts' }...]
+  const plotlyFetch = {
+    url: '/plotly-1.53.0.min.js.gz', // Ideally would freeze plotly version. Limit dependencies moving underfoot and now we could be more generous with Cache-Control in the request. 
+    options: {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'no-cache, max-age=0',
+        'Accept-Encoding': 'gzip;q=9.0'
+      }
+    },
+    prettyName: 'Charts'
+  }
+  const dataFetch = {
+    url: 'data.json.gz',
+    options: {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, max-age=0',
+        'Accept-Encoding': 'gzip;q=9.0'
+      }
+    },
+    prettyName: 'Data'
   }
 
-  const thisData = await getData('data.json.gz', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache, max-age=0',
-      'Accept-Encoding': 'gzip;q=9.0'
-    },
-  })
-  const app = new (init(thisData)) // returns and instance of App
-  app.updateForm()
+  const fetchResults = await app.fetchAll([plotlyFetch, dataFetch])
+  document.querySelector('.loading').setAttribute('style', 'display: none;') // When all the assets have finished loading hide the loading container 
+  app.updateState({ Plotly: fetchResults[0], data: fetchResults[1][0].data, meta: fetchResults[1][1].meta })
   app.updateTimestamp()
-  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
+  app.updateForm()
+  app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.updatePlot('plot')
+  document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
