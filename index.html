@@ -120,6 +120,55 @@ For those interested, this is what happened:
 
 ${err}`) } ) // So if something weird happens over the network that results in a 4xx or 5xx tell the user about it and let them know what to do next.
   }
+  this.createFullLocationList = (locationNode = this.state.data) => {
+    const getAllLocations = root => {
+      if(Object.keys(root.subregions).length === 0) {
+        return [ root.name ]
+      }
+      return [ root.name, ...Object.keys(root.subregions).map(thisSubregion => {
+        return getAllLocations(root.subregions[thisSubregion]).flat()
+      }).flat()]
+    }
+    const allLocations = getAllLocations(locationNode)
+    // allLocations.forEach(thisLocation => {
+    //   let locationSpan = this.state.filters.region.includes(thisLocation) ? `<span class="location-tag ${this.getCSSSafeString(thisLocation)}" >${thisLocation} <span class="remove-location">X</span></span>` : `<span class="location-tag ${this.getCSSSafeString(thisLocation)}" style="display: none;" >${thisLocation} <span class="add-location">+</span></span>`
+    //   document.querySelector('.search-container').insertAdjacentHTML('beforeend', locationSpan)
+    // })
+    this.updateState({allLocations})
+    
+  }
+  // this.getCSSSafeString = str => str.replace(/[!\"#$%&'\(\)\*\+,\.\/:;<=>\?\@\[\\\]\^`\{\|\}~]/g, '').split(' ').join('')
+  this.locationSearch = (str, limit = 20) => { // Limit because, like, really, type another character and get more specific with your search if there are more than 20 results. Was 30, but there is a scrolling issue with that many options
+    if(str.length === 1 || str.length === 2) return undefined // Cheap debounce. Like, no need to do so many operations for one or character search. C'mon. And the shortest locations are four characters long, so no locations are being left out.
+    if(document.querySelector('.tags')) document.querySelector('.tags').remove()
+    let html = '<div class="tags">'
+    this.state.filters.region.forEach(thisRegion => {
+      html += `<span class="location-tag" value="${thisRegion}" >${thisRegion} <span class="remove-location">X</span></span>`
+    })
+
+    if(str.length > 0) {
+      let count = 0
+      const iterator = this.state.allLocations.values();
+      for (const value of iterator) {
+        if(value.toLowerCase().includes(str.toLowerCase())) {
+          html += `<span class="location-tag" value="${value}">${value} <span class="add-location">+</span></span>`
+          count++
+          if(count > limit) break
+        }
+      }
+    }
+    html += '</div>'
+    const locationTagElems = document.createRange().createContextualFragment(html)
+    console.info(locationTagElems.querySelectorAll('span.location-tag').length)
+    locationTagElems.querySelectorAll('span.location-tag').forEach(thisLocationTag => {
+      thisLocationTag.addEventListener('click', event => {
+        this.setFilters('region', event.target.innerText.substring(0,event.target.innerText.length - 2))
+        this.locationSearch(str)
+      })
+    })
+    document.querySelector('.search-container').appendChild(locationTagElems)
+
+  }
   this.updateForm = (formSelection = 'Earth') => {
     let locationNode = this.findLocation(formSelection)
     let updatedState = this.updateState( { formOptions: {region: [ locationNode.name ], subregions: Object.keys(locationNode.subregions) } })
@@ -358,11 +407,13 @@ If you do not believe that's the situation, please report an issue (use the link
     position: -webkit-sticky;
     position: sticky;
     top: 1em;
-    margin: auto;
+    margin: 0.2em auto;
     height: fit-content;
     max-width: 780px;
     width: 100%;
     z-index: 999;
+    /* overflow-y: scroll; */
+    max-height: 320px;
   }
   nav {
     position: -webkit-sticky;
@@ -384,7 +435,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   body {
     font-family: 'Times New Roman';
-    font-size: 1em;
+    /* font-size: 1em; */
     position: relative;
   }
   select {
@@ -426,6 +477,7 @@ If you do not believe that's the situation, please report an issue (use the link
   details[open] > summary {
     background-color: white;
     border-radius: 0.5em;
+    padding: 0.1e;
   }
   form.fitler-form {
     background: white;
@@ -446,34 +498,33 @@ If you do not believe that's the situation, please report an issue (use the link
   select {
     width: 100%;
   }
-  fieldset.metrics {
+  fieldset {
     margin: auto;
     text-align-last: justify;
     height: fit-content;
   }
-  fieldset.metrics div {
+  fieldset div {
     display: inline;
   }
   label.metric-checkbox {
-    line-height: 2em;
     background-color: white;
     cursor: pointer;
-
     display: inline-block;
     width: 49%;
     height: 100%;
     border-radius: 0px;
-    padding: 0px;
+    padding: 0.4em 0;
     border: 0px;
     text-align-last: center;
     margin: 0px;
+    text-align: center;
   }
   label.metric-checkbox.selected {
     color: white;
     font-weight: bold;
     background-color: black;
   }
-  fieldset.metrics label > input {
+  fieldset label > input {
     display: none;
   }
   #plot {
@@ -513,29 +564,96 @@ If you do not believe that's the situation, please report an issue (use the link
       font-size: 20px;
     }
     fieldset {
-      font-size: 0.8em !important /* lazy, probably breaks something */
+      /* font-size: 0.8em !important lazy, probably breaks something */
+      padding: 0.2em;
     }
-}
-div.loading {
-  background-color: white;
-  position: fixed;
-  height: 100px;
-  width: 100%;
-  top: 30%;
-  background: white;
-  z-index: 1000;
-}
-div.loading > .load-progress {
-  background-color: white;
-  margin: auto;
-  margin-top: 1em;
-  position: relative;
-  display: block;
-  width: 100%;
-  height: fit-content;
-  text-align: center;
-  font-size: 1.5em;
-}
+  }
+  div.loading {
+    background-color: white;
+    position: fixed;
+    height: 100px;
+    width: 100%;
+    top: 30%;
+    background: white;
+    z-index: 1000;
+  }
+  div.loading > .load-progress {
+    background-color: white;
+    margin: auto;
+    margin-top: 1em;
+    position: relative;
+    display: block;
+    width: 100%;
+    height: fit-content;
+    text-align: center;
+    font-size: 1.5em;
+  }
+  .search-container {
+    /* width: inherit; */
+    overflow-y: hidden;
+    overflow-x: scroll;
+    /* height: 100px; */
+    /* max-height: 200px; */
+    display: block;
+  }
+  .location-search-box {
+    width: 80%;
+    max-width: 400px;
+    min-width: 200px;
+    margin: 0.2em;
+    display: block;
+    /* position: absolute; */
+    padding: 0.2em;
+    text-shadow: 0 0 black;
+  }
+  .location-tag {
+    background-color: whitesmoke;
+    margin: 0.2em;
+    padding: 0.2em;
+    border-radius: 0.2em;
+    font-weight: 700;
+    border: 1px solid black;
+    width: fit-content;
+    float: left;
+    display: inline-block;
+  }
+  .add-location {
+    margin: 0.1em;
+    padding: 0.1em 0.3em;
+    font-weight: 1000;
+    background-color: white;
+    border-radius: 0.2em;
+  }
+  .remove-location {
+    margin: 0.1em;
+    padding: 0.1em 0.3em;
+    font-weight: 1000;
+    background-color: black;
+    color: white;
+    border-radius: 0.2em;
+  }
+  .show-more-locations {
+    padding: 0.1em 0.3em;
+    background-color: whitesmoke;
+    margin: 0.2em;
+    padding: 0.2em;
+    border-radius: 0.2em;
+    font-weight: 700;
+    border: 1px solid black;
+    display: inline-block;
+  }
+  .tags {
+      width: max-content;
+      overflow-x: visible;
+      display: inline-block;
+  }
+
+  fieldset.location-search {
+      min-inline-size: auto;
+      overflow-x: hidden;
+      /* width: inherit; */
+      /* max-height: min-content; */
+  }
 </style>
 
 <body>
@@ -560,10 +678,18 @@ div.loading > .load-progress {
   </header>
   <hr />
   <div class="sticky-form" id="top" style="opacity: 0;">
+    <button onclick="return false" disable style="display: none;">Submit</button>
     <details open="true"> 
       <summary>Filters (Click to show/hide)</summary>
       <form class="fitler-form">
-        <fieldset class="regions">
+        <fieldset class="location-search">
+        <legend>Location Search</legend>
+        <div class="search-container">
+          <input class="location-search-box" name="location-search-box" type="text" placeholder="Type three letters..."/>
+          <div class="tags"></div>
+        </div>
+        </fieldset>
+        <fieldset class="regions" style="display: none;">
           <legend>Choose a region or subregion</legend>
           <div style="float: left;">
             <fieldset class='sub-fieldset'>
@@ -582,53 +708,46 @@ div.loading > .load-progress {
             </fieldset>
           </div>
         </fieldset>
-        <fieldset class="metrics">
-          <legend>Choose a few metrics and derived metrics</legend>
-          <div style="float: left;">
+        <fieldset>
+          <legend>Metrics</legend>
+          <div>
+            <label class="metric-checkbox selected">Cases
+              <input type="checkbox" value="cases" name="cases" checked>
+            </label>
+          </div>
+          <div>
+            <label class="metric-checkbox">Deaths
+              <input type="checkbox" value="deaths" name="deaths">
+            </label>
+          </div>
             <fieldset class='sub-fieldset'>
-              <legend>Metrics</legend>
+              <legend>Derived Metrics</legend>
               <div>
-                <label class="metric-checkbox selected">Cases
-                  <input type="checkbox" value="cases" name="cases" checked>
+                <label class="metric-checkbox">Daily Case Change (#)
+                  <input type="checkbox" value="caseChange" name="cases">
                 </label>
               </div>
               <div>
-                <label class="metric-checkbox">Deaths
-                  <input type="checkbox" value="deaths" name="deaths">
+                <label class="metric-checkbox">Daily Case Change (%)
+                  <input type="checkbox" value="caseChangePercent" name="deaths">
                 </label>
               </div>
-              <div style="float: right;">
-                <fieldset class='sub-fieldset'>
-                  <legend>Derived Metrics</legend>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (#)
-                      <input type="checkbox" value="caseChange" name="cases">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (%)
-                      <input type="checkbox" value="caseChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (#)
-                      <input type="checkbox" value="deathsChange" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (%)
-                      <input type="checkbox" value="deathsChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Survival Rate (%)
-                      <input type="checkbox" value="survivalRate" name="deaths">
-                    </label>
-                  </div>
-                </fieldset>
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (#)
+                  <input type="checkbox" value="deathsChange" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (%)
+                  <input type="checkbox" value="deathsChangePercent" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Survival Rate (%)
+                  <input type="checkbox" value="survivalRate" name="deaths">
+                </label>
               </div>
             </fieldset>
-          </div>
         </fieldset>
       </form>
     </details>
@@ -673,11 +792,18 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   document.querySelector('.loading').setAttribute('style', 'display: none;') // When all the assets have finished loading hide the loading container 
   app.updateState({ Plotly: fetchResults[0], data: fetchResults[1][0].data, meta: fetchResults[1][1].meta })
   app.updateTimestamp()
+  app.createFullLocationList()
+  document.querySelector('form').onkeypress = (e) => { // https://teamtreehouse.com/community/how-to-disable-submitting-a-form-when-i-press-on-the-enter-key
+    let key = e.charCode || e.keyCode || 0;
+    if (key == 13) e.preventDefault()
+  }
   app.updateForm()
-  app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
+  // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.updatePlot('plot')
+  app.locationSearch('') // Sets the initial filter as a location tag box to add & remove (has been "Earth", typically)
   document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
-  
+
+  document.querySelector('input[name=location-search-box]').addEventListener('input', (event) => { app.locationSearch(event.target.value) })
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelectorAll('.metric-checkbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
