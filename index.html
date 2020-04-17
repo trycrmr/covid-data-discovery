@@ -6,7 +6,6 @@
   <title>COVID Data Website</title>
   <meta name="description" content="COVID-19 Data Discovery">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<!--   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script> -->
   <script type="text/javascript">
 
 const init = () => {
@@ -56,19 +55,15 @@ return function App (state = defaultState) {
       return this.state
     }
   }
-  this.updateLoadingUI = async (obj) => { // {num, total, name}
-    const loadingUI = document.querySelector(`.${obj.name}`)
-    const num = Math.floor(Number(obj.num) / 1000)
-    const total = Math.floor(Number(obj.total) / 1000)
-    const percent = Math.floor((num/total) * 100) 
-    if(loadingUI) {
-      if(obj.num === obj.total) {
-        loadingUI.innerText = `Fetching ${obj.name}: Complete.` 
-      } else {
-        loadingUI.innerText = `Fetching ${obj.name}: ${percent}% (${num}kb / ${total}kb)` 
-      }
+  this.updateLoadingUI = async obj => { // {num, total, name}
+    const loadingUI = document.querySelector(`.${obj.name}`) // Not checking to see if it exists first because it is part of the initial load in the HTML. This could change if more things get loaded in.
+    if(obj.num === obj.total) {
+      loadingUI.innerText = `Fetching ${obj.name}: Complete.` 
     } else {
-      document.querySelector('.loading').append(`<span class="load-progress ${obj.name}">Fetching ${percent}% (${num}kb / ${total}kb)</span>`)
+      const num = Math.floor(Number(obj.num) / 1000)
+      const total = Math.floor(Number(obj.total) / 1000)
+      const percent = Math.floor((num/total) * 100) 
+      loadingUI.innerText = `Fetching ${obj.name}: ${percent}%` 
     }
   }
   this.updateFetchProgress = async (fetchObj) => {
