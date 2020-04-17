@@ -140,13 +140,13 @@ ${err}`) } ) // So if something weird happens over the network that results in a
   // this.getCSSSafeString = str => str.replace(/[!\"#$%&'\(\)\*\+,\.\/:;<=>\?\@\[\\\]\^`\{\|\}~]/g, '').split(' ').join('')
   this.locationSearch = (str, limit = 20) => { // Limit because, like, really, type another character and get more specific with your search if there are more than 20 results. Was 30, but there is a scrolling issue with that many options
     if(str.length === 1 || str.length === 2) return undefined // Cheap debounce. Like, no need to do so many operations for one or character search. C'mon. And the shortest locations are four characters long, so no locations are being left out.
-    if(document.querySelector('.tags')) document.querySelector('.tags').remove()
+    document.querySelector('.tags').remove()
     let html = '<div class="tags">'
     this.state.filters.region.forEach(thisRegion => {
       html += `<span class="location-tag" value="${thisRegion}" >${thisRegion} <span class="remove-location">X</span></span>`
     })
 
-    if(str.length > 0) {
+    if(str.length > 0 && !this.state.filters.region.includes(str)) {
       let count = 0
       const iterator = this.state.allLocations.values();
       for (const value of iterator) {
@@ -159,11 +159,11 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     }
     html += '</div>'
     const locationTagElems = document.createRange().createContextualFragment(html)
-    console.info(locationTagElems.querySelectorAll('span.location-tag').length)
     locationTagElems.querySelectorAll('span.location-tag').forEach(thisLocationTag => {
       thisLocationTag.addEventListener('click', event => {
-        this.setFilters('region', event.target.innerText.substring(0,event.target.innerText.length - 2))
+        this.setFilters('region', event.target.innerText.substring(0,event.target.innerText.length - 2)) // Don't love this, but here we are. 
         this.locationSearch(str)
+        return undefined
       })
     })
     document.querySelector('.search-container').appendChild(locationTagElems)
@@ -797,15 +797,15 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     let key = e.charCode || e.keyCode || 0;
     if (key == 13) e.preventDefault()
   }
-  app.updateForm()
+  // app.updateForm()
   // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.updatePlot('plot')
   app.locationSearch('') // Sets the initial filter as a location tag box to add & remove (has been "Earth", typically)
   document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
 
   document.querySelector('input[name=location-search-box]').addEventListener('input', (event) => { app.locationSearch(event.target.value) })
-  document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
-  document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
+  // document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
+  // document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelectorAll('.metric-checkbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
     if(!event.target.value) return undefined
     if(event.target.checked && !(app.state.filters.metric.includes(event.target.value))) {
@@ -818,10 +818,10 @@ document.addEventListener("DOMContentLoaded", async(event) => {
       return undefined
     }
   }))
-  document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
-    if(!event.target.value) return undefined
-    return app.setFilters('showSubregions', event.target.checked)
-  })
+  // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
+  //   if(!event.target.value) return undefined
+  //   return app.setFilters('showSubregions', event.target.checked)
+  // })
 })
 </script>
 </html>
