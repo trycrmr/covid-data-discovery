@@ -146,8 +146,8 @@ ${err}`) } ) // So if something weird happens over the network that results in a
       html += `<span class="location-tag" value="${thisRegion}" >${thisRegion} <span class="remove-location">X</span></span>`
     })
 
+    let count = 0
     if(str.length > 0 && !this.state.filters.region.includes(str)) {
-      let count = 0
       const iterator = this.state.allLocations.values();
       for (const value of iterator) {
         if(value.toLowerCase().includes(str.toLowerCase())) {
@@ -157,6 +157,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
         }
       }
     }
+    if(str.length > 2 && !count) html += '<span class="no-results">No location results. Try some different letters.</span>'
     html += '</div>'
     const locationTagElems = document.createRange().createContextualFragment(html)
     locationTagElems.querySelectorAll('span.location-tag').forEach(thisLocationTag => {
@@ -653,6 +654,15 @@ If you do not believe that's the situation, please report an issue (use the link
       overflow-x: hidden;
       /* width: inherit; */
       /* max-height: min-content; */
+  }
+  .no-results {
+    margin: 0.2em;
+    padding: 0.2em;
+    width: fit-content;
+    float: left;
+    display: inline-block;
+    color: grey;
+    font-style: italic;
   }
 </style>
 
