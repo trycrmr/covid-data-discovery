@@ -818,7 +818,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
       // This is a little convenience so the user does not need to take their hands off the keyboard. I mean, if they spam press enter, like, what are you doing? Stop.
       let currentLocationInput = document.querySelector('input[name=location-search-box]').value
       if(currentLocationInput.length > 3) { // First check length so the heavier check doesn't happen uselessly (no location names are shorter than three characters)
-        currentLocationInput = `${currentLocationInput[0].toUpperCase()}${currentLocationInput.substring(1)}` // so asia becomes Asia but Asia is Asia, right? If you're screaming ASIA go away.
+        currentLocationInput = `${currentLocationInput[0].toUpperCase()}${currentLocationInput.substring(1)}` // so asia becomes Asia but Asia is Asia, right? If you're screaming ASIA go away. Pretty brittle if country is two words. Also want to add mappings of common nicknames of countries are whatever. This will do for now. Gotta make sure it's a performant implementation, even on spam press. 
         if(app.state.allLocations.includes(currentLocationInput)) {
           app.setFilters('region', currentLocationInput)
           app.locationSearch(currentLocationInput)
