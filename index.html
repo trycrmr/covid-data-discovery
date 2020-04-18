@@ -164,7 +164,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
       thisLocationTag.addEventListener('click', event => {
         this.setFilters('region', event.target.innerText.substring(0,event.target.innerText.length - 2)) // Don't love this, but here we are. 
         this.locationSearch(str)
-        return undefined
+        return undefined // Maybe not necessary. I thought it might speed up the execution time to return out of the function after kicking off the other functions. Who really knows how JavaScript works, anyways???
       })
     })
     document.querySelector('.search-container').appendChild(locationTagElems)
@@ -214,8 +214,8 @@ ${err}`) } ) // So if something weird happens over the network that results in a
   this.setFilters = (type, filters) => {
     switch(type) {
       case 'region':
-        this.updateForm(filters)
-        return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )
+        // this.updateForm(filters)
+        return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
       case 'showSubregions':
@@ -233,26 +233,23 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
   }
+  this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
+    let length = arr.length;
+    if(length <= 1) return arr.join() // just return a stringifyed array if less than two
+    if(length > 2) arr[length - 1] = 'and ' + arr[length - 1] // if longer than two characters, append "and" to the last element
+    return arr.join(length > 2 ? ', ' : ' and ') // if longer than two characters join the array together with either commas or "and"
+  }
   this.getPlotConfig = (type = 'time series', filters = this.state.filters, plotLayout = undefined) => {
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
-    plotLayout = { title: this.state.filters.metric
-      .map(thisMetric => this.state.filters.prettyText[thisMetric])
-      .sort((a, b) => a.localeCompare(b))
-      .reduce((acc, curr, currIdx, origArr) => { // Really didn't get creative here code-wise because I didn't want to mess up and edge cases with the titles. Conditionals for the win!
-        if(currIdx === 0) acc = `${curr}`
-        if(origArr.length === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
-        if(origArr.length === 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
-        if(origArr.length === 2 && currIdx === 0) return acc
-        if(origArr.length === 2 && currIdx === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` and ${curr} in ${this.state.filters.region[0]}`
-        if(origArr.length === 2 && currIdx === 1 && this.state.filters.region[0] === 'Earth') return acc + ` and ${curr} on ${this.state.filters.region[0]}`
-        if(origArr.length >= 2 && currIdx === origArr.length - 1) acc = acc + `, and ${curr}`
-        if(currIdx === origArr.length - 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
-        if(currIdx === origArr.length - 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
-        if(origArr.length >= 2 && currIdx !== origArr.length - 1 && currIdx > 0) acc = acc + `, ${curr}`
-        return acc
-      }, '')
+    plotLayout = { title: `${
+      this.conjunctionize(
+        this.state.filters.metric
+        .map(thisMetric => this.state.filters.prettyText[thisMetric])
+        .sort((a, b) => a.localeCompare(b))
+      )
+      } for ${this.conjunctionize(this.state.filters.region.map(e=>e))}` // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
     },
     plotLayout = { 
       ...plotLayout,
@@ -617,6 +614,7 @@ If you do not believe that's the situation, please report an issue (use the link
     width: fit-content;
     float: left;
     display: inline-block;
+    cursor: pointer;
   }
   .add-location {
     margin: 0.1em;
