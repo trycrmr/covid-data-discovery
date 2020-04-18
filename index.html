@@ -811,7 +811,20 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   app.createFullLocationList()
   document.querySelector('form').onkeypress = (e) => { // https://teamtreehouse.com/community/how-to-disable-submitting-a-form-when-i-press-on-the-enter-key
     let key = e.charCode || e.keyCode || 0;
-    if (key == 13) e.preventDefault()
+    if (key == 13) {
+      console.info('enter pressed')
+      e.preventDefault()
+
+      // This is a little convenience so the user does not need to take their hands off the keyboard. I mean, if they spam press enter, like, what are you doing? Stop.
+      let currentLocationInput = document.querySelector('input[name=location-search-box]').value
+      if(currentLocationInput.length > 3) { // First check length so the heavier check doesn't happen uselessly (no location names are shorter than three characters)
+        currentLocationInput = `${currentLocationInput[0].toUpperCase()}${currentLocationInput.substring(1)}` // so asia becomes Asia but Asia is Asia, right? If you're screaming ASIA go away.
+        if(app.state.allLocations.includes(currentLocationInput)) {
+          app.setFilters('region', currentLocationInput)
+          app.locationSearch(currentLocationInput)
+        }
+      }
+    }
   }
   // app.updateForm()
   // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
