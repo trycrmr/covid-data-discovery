@@ -143,15 +143,16 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     document.querySelector('.tags').remove()
     let html = '<div class="tags">'
     this.state.filters.region.forEach(thisRegion => {
-      html += `<span class="location-tag" value="${thisRegion}" >${thisRegion} <span class="remove-location">X</span></span>`
+      html += `<span class="location-tag">${thisRegion} <span class="remove-location">X</span></span>`
     })
 
     let count = 0
     if(str.length > 0 && !this.state.filters.region.includes(str)) {
       const iterator = this.state.allLocations.values();
       for (const value of iterator) {
+        if(this.state.filters.region.includes(value)) continue // Don't create an add-location span if this location is in the filters
         if(value.toLowerCase().includes(str.toLowerCase())) {
-          html += `<span class="location-tag" value="${value}">${value} <span class="add-location">+</span></span>`
+          html += `<span class="location-tag">${value} <span class="add-location">+</span></span>`
           count++
           if(count > limit) break
         }
@@ -161,8 +162,9 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     html += '</div>'
     const locationTagElems = document.createRange().createContextualFragment(html)
     locationTagElems.querySelectorAll('span.location-tag').forEach(thisLocationTag => {
-      thisLocationTag.addEventListener('click', event => {
-        this.setFilters('region', event.target.innerText.substring(0,event.target.innerText.length - 2)) // Don't love this, but here we are. 
+      thisLocationTag.addEventListener('click', event => { // Oof. Really don't love this event listener. Brittle and adds dependency on the structure of the HTML. Alas, here we are.
+        let regionText = event.target.className === 'add-location' || event.target.className === 'remove-location' ? event.target.parentElement.innerText : event.target.innerText
+        this.setFilters('region', regionText.substring(0,regionText.length - 2)) // Don't love this, but here we are. 
         this.locationSearch(str)
         return undefined // Maybe not necessary. I thought it might speed up the execution time to return out of the function after kicking off the other functions. Who really knows how JavaScript works, anyways???
       })
@@ -214,7 +216,10 @@ ${err}`) } ) // So if something weird happens over the network that results in a
   this.setFilters = (type, filters) => {
     switch(type) {
       case 'region':
-        // this.updateForm(filters)
+        if(this.state.filters.region.includes(filters) && this.state.filters.region.length > 1) // Toggles region filter instead of only adding
+          return this.updateState( { filters: { ...this.state.filters, region: this.state.filters.region.filter(thisElem => filters !== thisElem) } } )
+        
+        if(this.state.filters.region.includes(filters)) return undefined // Don't do anything if there is only one filter
         return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
@@ -271,15 +276,18 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     switch(type) { // Written as a switch keeping the future feature open to allow the user to select different types of charts. Tough to ensure the UI looks decent between each of the charts with all the cuts of the metrics over time, but it's possible. 
       case 'time series':
         const timeFormat = {month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
-        let locationNode = this.findLocation(this.state.filters.region[0])
-        let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
+        // let locationNode = this.findLocation(this.state.filters.region[0])
+        // let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
+        let locationNodes = this.state.filters.region.map(thisRegion => this.findLocation(thisRegion))
         //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
         plotData = this.state.filters.metric.map(thisMetric => {
           let locationsWithoutData = []
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
+            let threeRandomNumbers = new Array(3).fill(null).map(thisElem => Math.floor(Math.random() * 200).toFixed(0)) // 255, 255, 255 is white, so that's why 200 is arbitrarily picked. Darker, but different colors is probably good for viewing. 
+            let thisColor = `rgb(${threeRandomNumbers[0]},${threeRandomNumbers[1]},${threeRandomNumbers[2]})`
             try {
-              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
-              if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
+              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', line: { color: thisColor }, markers: { color: thisColor }, name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
+              // if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
               obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
               obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
               if(parseInt(obj.x[0]) > parseInt(obj.x[1])) { // band aid fix to preserve order. Date to metric key-value pairs are stored as a hashmap and that's making it real tough to ensure the order. https://github.com/trycrmr/covid-data-batch-server/issues/6
