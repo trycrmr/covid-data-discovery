@@ -16,30 +16,30 @@
 
     gtag('config', 'UA-31386246-9');
   </script>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script type="text/javascript">
-const init = (data) => {
 
-const defaultState = { 
-  data: data[0].data,
-  meta: data[1].meta,
-  formOptions: { region: ['Earth'], subregions: Object.keys(data[0].data.subregions).sort() },  
-  filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
-    prettyText: {
-      "cases": "Cases",
-      "deaths": "Deaths",
-      "caseChange": "Daily Case Change (#)",
-      "caseChangePercent": "Daily Case Change (%)",
-      "deathsChange": "Daily Deaths Change (#)",
-      "deathsChangePercent": "Daily Deaths Change (%)",
-      "survivalRate": "Survival Rate (%)"
-    }
-  },
-  debug: false,
-  plot: { target: (id = 'plot') => { return document.getElementById(id) },
-  config: undefined },
-  listeners: []
-}
+const init = () => {
+  const defaultState = { 
+    data: null,
+    meta: null,
+    Plotly: null,
+    formOptions: { region: ['Earth'], subregions: null },  
+    filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
+      prettyText: {
+        "cases": "Cases",
+        "deaths": "Deaths",
+        "caseChange": "Daily Case Change (#)",
+        "caseChangePercent": "Daily Case Change (%)",
+        "deathsChange": "Daily Deaths Change (#)",
+        "deathsChangePercent": "Daily Deaths Change (%)",
+        "survivalRate": "Survival Rate (%)"
+      }
+    },
+    debug: false,
+    plot: { target: (id = 'plot') => { return document.getElementById(id) },
+    config: undefined },
+    listeners: []
+  }  
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
   this.state = state
@@ -64,6 +64,123 @@ return function App (state = defaultState) {
     } else {
       return this.state
     }
+  }
+  this.updateLoadingUI = async obj => { // {num, total, name}
+    const loadingUI = document.querySelector(`.${obj.name}`) // Not checking to see if it exists first because it is part of the initial load in the HTML. This could change if more things get loaded in.
+    if(obj.num === obj.total) {
+      loadingUI.innerText = `Fetching ${obj.name}: Complete.` 
+    } else {
+      const num = Math.floor(Number(obj.num) / 1000)
+      const total = Math.floor(Number(obj.total) / 1000)
+      const percent = Math.floor((num/total) * 100) 
+      loadingUI.innerText = `Fetching ${obj.name}: ${percent}%` 
+    }
+  }
+  this.updateFetchProgress = async (fetchObj) => {
+    try {
+      const decoder = new TextDecoder('utf-8')
+      const response = await fetch(fetchObj.url, fetchObj.options);
+      if(!response.ok) throw new Error(`Issue fetching ${fetchObj.prettyName}: ${response.statusText}`)
+      const total = Number(response.headers.get('File-Size'));
+      const contentType = response.headers.get('content-type');
+
+      const reader = response.body.getReader(); // Grabbed this from stack overflow and stumbled into the world of handling streams. Did some learnin', for sure.
+      let bytesReceived = 0;
+      let body = ''
+      let eventCount = 0
+      while (true) {
+        const result = await reader.read()
+        if (result.done) {
+          this.updateLoadingUI({num: total, total, name: fetchObj.prettyName})          
+          if (!contentType || !contentType.includes('application/json')) {
+            return eval(body) // Umm...eval is pretty unsafe if you're not 100% sure of the content it's evaluating. Running eval on all network calls seems like a pretty bad idea. Refactor this to use a writeable stream to get the result of the network call into a variable that's returned, or something like that. For now...it'll be served over HTTPS from only private resources I own...so...safe enough? Oof. Bad. Don't @ me. 
+          } else {
+            return eval(body)
+          }
+          break;
+        }
+        bytesReceived += result.value.byteLength;
+        if(eventCount % 10 === 0 && eventCount > 0) {
+          this.updateLoadingUI({num: bytesReceived, total, name: fetchObj.prettyName})
+          eventCount++
+        } else {
+          eventCount++
+        }
+        body += decoder.decode(result.value)
+      }
+    } catch(err) {
+      console.error(err)
+      throw err
+    }
+  }
+  this.fetchAll = async (arrOfFetches) => { // [{ url, options, prettyName: 'Data' }, { url, options, prettyName: 'Charts' }...]
+    return Promise.all(
+      arrOfFetches.map( async thisFetch => { 
+        try {
+          let result = await this.updateFetchProgress(thisFetch)
+          return result
+        } catch(err) {
+          throw err
+        }
+      })
+    )
+    .catch(err => { alert(`Failed to load some necessary ingredients; Try reloading the page, then checking your internet connection. If the problem persists, report the issue at https://github.com/trycrmr/covid-data-discovery/issues
+
+For those interested, this is what happened: 
+
+${err}`) } ) // So if something weird happens over the network that results in a 4xx or 5xx tell the user about it and let them know what to do next.
+  }
+  this.createFullLocationList = (locationNode = this.state.data) => {
+    const getAllLocations = root => {
+      if(Object.keys(root.subregions).length === 0) {
+        return [ root.name ]
+      }
+      return [ root.name, ...Object.keys(root.subregions).map(thisSubregion => {
+        return getAllLocations(root.subregions[thisSubregion]).flat()
+      }).flat()]
+    }
+    const allLocations = getAllLocations(locationNode)
+    // allLocations.forEach(thisLocation => {
+    //   let locationSpan = this.state.filters.region.includes(thisLocation) ? `<span class="location-tag ${this.getCSSSafeString(thisLocation)}" >${thisLocation} <span class="remove-location">X</span></span>` : `<span class="location-tag ${this.getCSSSafeString(thisLocation)}" style="display: none;" >${thisLocation} <span class="add-location">+</span></span>`
+    //   document.querySelector('.search-container').insertAdjacentHTML('beforeend', locationSpan)
+    // })
+    this.updateState({allLocations})
+    
+  }
+  // this.getCSSSafeString = str => str.replace(/[!\"#$%&'\(\)\*\+,\.\/:;<=>\?\@\[\\\]\^`\{\|\}~]/g, '').split(' ').join('')
+  this.locationSearch = (str, limit = 20) => { // Limit because, like, really, type another character and get more specific with your search if there are more than 20 results. Was 30, but there is a scrolling issue with that many options
+    if(str.length === 1 || str.length === 2) return undefined // Cheap debounce. Like, no need to do so many operations for one or character search. C'mon. And the shortest locations are four characters long, so no locations are being left out.
+    document.querySelector('.tags').remove()
+    let html = '<div class="tags">'
+    this.state.filters.region.forEach(thisRegion => {
+      html += `<span class="location-tag">${thisRegion} <span class="remove-location">X</span></span>`
+    })
+
+    let count = 0
+    if(str.length > 0 && !this.state.filters.region.includes(str)) {
+      const iterator = this.state.allLocations.values();
+      for (const value of iterator) {
+        if(this.state.filters.region.includes(value)) continue // Don't create an add-location span if this location is in the filters
+        if(value.toLowerCase().includes(str.toLowerCase())) {
+          html += `<span class="location-tag">${value} <span class="add-location">+</span></span>`
+          count++
+          if(count > limit) break
+        }
+      }
+    }
+    if(str.length > 2 && !count) html += '<span class="no-results">No location results. Try some different letters.</span>'
+    html += '</div>'
+    const locationTagElems = document.createRange().createContextualFragment(html)
+    locationTagElems.querySelectorAll('span.location-tag').forEach(thisLocationTag => {
+      thisLocationTag.addEventListener('click', event => { // Oof. Really don't love this event listener. Brittle and adds dependency on the structure of the HTML. Alas, here we are.
+        let regionText = event.target.className === 'add-location' || event.target.className === 'remove-location' ? event.target.parentElement.innerText : event.target.innerText
+        this.setFilters('region', regionText.substring(0,regionText.length - 2)) // Don't love this, but here we are. 
+        this.locationSearch(str)
+        return undefined // Maybe not necessary. I thought it might speed up the execution time to return out of the function after kicking off the other functions. Who really knows how JavaScript works, anyways???
+      })
+    })
+    document.querySelector('.search-container').appendChild(locationTagElems)
+
   }
   this.updateForm = (formSelection = 'Earth') => {
     let locationNode = this.findLocation(formSelection)
@@ -109,8 +226,11 @@ return function App (state = defaultState) {
   this.setFilters = (type, filters) => {
     switch(type) {
       case 'region':
-        this.updateForm(filters)
-        return this.updateState( { filters: { ...this.state.filters, region: [ filters ] } } )
+        if(this.state.filters.region.includes(filters) && this.state.filters.region.length > 1) // Toggles region filter instead of only adding
+          return this.updateState( { filters: { ...this.state.filters, region: this.state.filters.region.filter(thisElem => filters !== thisElem) } } )
+        
+        if(this.state.filters.region.includes(filters)) return undefined // Don't do anything if there is only one filter
+        return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
       case 'showSubregions':
@@ -119,35 +239,33 @@ return function App (state = defaultState) {
         return this.state
     }
   }
-  this.updatePlot = (id, type) => { 
+  this.updatePlot = async (id, type) => { 
     let thisPlotConfig = this.getPlotConfig(type, this.state.filters)
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
     this.state.plot.target(id)
-    Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later
     document.querySelector('div.table').remove()
-    document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
-    document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`)
+    setTimeout( async () => {
+      await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+      document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+    }, 10) // Give the browser a breath to update the UI
+  }
+  this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
+    let length = arr.length;
+    if(length <= 1) return arr.join() // just return a stringifyed array if less than two
+    if(length > 2) arr[length - 1] = 'and ' + arr[length - 1] // if longer than two characters, append "and" to the last element
+    return arr.join(length > 2 ? ', ' : ' and ') // if longer than two characters join the array together with either commas or "and"
   }
   this.getPlotConfig = (type = 'time series', filters = this.state.filters, plotLayout = undefined) => {
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
-    plotLayout = { title: this.state.filters.metric
-      .map(thisMetric => this.state.filters.prettyText[thisMetric])
-      .sort((a, b) => a.localeCompare(b))
-      .reduce((acc, curr, currIdx, origArr) => { // Really didn't get creative here code-wise because I didn't want to mess up and edge cases with the titles. Conditionals for the win!
-        if(currIdx === 0) acc = `${curr}`
-        if(origArr.length === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
-        if(origArr.length === 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
-        if(origArr.length === 2 && currIdx === 0) return acc
-        if(origArr.length === 2 && currIdx === 1 && this.state.filters.region[0] !== 'Earth') return acc + ` and ${curr} in ${this.state.filters.region[0]}`
-        if(origArr.length === 2 && currIdx === 1 && this.state.filters.region[0] === 'Earth') return acc + ` and ${curr} on ${this.state.filters.region[0]}`
-        if(origArr.length >= 2 && currIdx === origArr.length - 1) acc = acc + `, and ${curr}`
-        if(currIdx === origArr.length - 1 && this.state.filters.region[0] !== 'Earth') return acc + ` in ${this.state.filters.region[0]}`
-        if(currIdx === origArr.length - 1 && this.state.filters.region[0] === 'Earth') return acc + ` on ${this.state.filters.region[0]}`
-        if(origArr.length >= 2 && currIdx !== origArr.length - 1 && currIdx > 0) acc = acc + `, ${curr}`
-        return acc
-      }, '')
+    plotLayout = { title: `${
+      this.conjunctionize(
+        this.state.filters.metric
+        .map(thisMetric => this.state.filters.prettyText[thisMetric])
+        .sort((a, b) => a.localeCompare(b))
+      )
+      } for ${this.conjunctionize(this.state.filters.region.map(e=>e))}` // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
     },
     plotLayout = { 
       ...plotLayout,
@@ -169,15 +287,18 @@ return function App (state = defaultState) {
     switch(type) { // Written as a switch keeping the future feature open to allow the user to select different types of charts. Tough to ensure the UI looks decent between each of the charts with all the cuts of the metrics over time, but it's possible. 
       case 'time series':
         const timeFormat = {month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString to create x-axis dates
-        let locationNode = this.findLocation(this.state.filters.region[0])
-        let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
+        // let locationNode = this.findLocation(this.state.filters.region[0])
+        // let locationNodes = this.state.filters.showSubregions && Object.keys(locationNode.subregions).length > 0 ? [...Object.keys(locationNode.subregions).map(thisSubregion => locationNode.subregions[thisSubregion]), locationNode ] : [ locationNode ]
+        let locationNodes = this.state.filters.region.map(thisRegion => this.findLocation(thisRegion))
         //^ If the user wants the subregions visualized and the location has subregions, get the subregions. Otherwise, just return the location.
         plotData = this.state.filters.metric.map(thisMetric => {
           let locationsWithoutData = []
           return locationNodes.reduce((acc, curr, currIdx, origArr) => {
+            let threeRandomNumbers = new Array(3).fill(null).map(thisElem => Math.floor(Math.random() * 200).toFixed(0)) // 255, 255, 255 is white, so that's why 200 is arbitrarily picked. Darker, but different colors is probably good for viewing. 
+            let thisColor = `rgb(${threeRandomNumbers[0]},${threeRandomNumbers[1]},${threeRandomNumbers[2]})`
             try {
-              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
-              if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
+              let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', line: { color: thisColor }, markers: { color: thisColor }, name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
+              // if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
               obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
               obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
               if(parseInt(obj.x[0]) > parseInt(obj.x[1])) { // band aid fix to preserve order. Date to metric key-value pairs are stored as a hashmap and that's making it real tough to ensure the order. https://github.com/trycrmr/covid-data-batch-server/issues/6
@@ -299,15 +420,20 @@ If you do not believe that's the situation, please report an issue (use the link
     height: fit-content;
     z-index: 999;
   }
-  .sticky-form {
-    position: -webkit-sticky; 
+  .sticky-things { /* In learning about z-index, here's a wrapper in case covering the form makes sense for some reason in the future. Was from some dev that isn't going to get deployed. Also, kinda don't want to refactor this out the off chance it's used again. That's more of an excuse though. ¯\_(ツ)_/¯ */
+    position: -webkit-sticky;
     position: sticky;
     top: 1em;
-    margin: auto;
+    margin: 0.2em auto;
     height: fit-content;
     max-width: 780px;
     width: 100%;
+    z-index:998;
+  }
+  .sticky-form {
     z-index: 999;
+    max-height: 320px;
+    background-color: white;
   }
   nav {
     position: -webkit-sticky;
@@ -329,7 +455,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   body {
     font-family: 'Times New Roman';
-    font-size: 1em;
+    /* font-size: 1em; */
     position: relative;
   }
   select {
@@ -371,9 +497,11 @@ If you do not believe that's the situation, please report an issue (use the link
   details[open] > summary {
     background-color: white;
     border-radius: 0.5em;
+    padding: 0.1e;
   }
   form.fitler-form {
     background: white;
+    position: relative;
   }
   fieldset.regions {
     height: fit-content;
@@ -391,42 +519,42 @@ If you do not believe that's the situation, please report an issue (use the link
   select {
     width: 100%;
   }
-  fieldset.metrics {
+  fieldset {
     margin: auto;
     text-align-last: justify;
     height: fit-content;
   }
-  fieldset.metrics div {
-    /* display: inline-block; */
+  fieldset div {
     display: inline;
   }
   label.metric-checkbox {
-    line-height: 2em;
-    /* padding: 0.5em; */
     background-color: white;
-    /* border: 1px solid black; */
-    /* border-radius: 0.5em; */
     cursor: pointer;
-
     display: inline-block;
     width: 49%;
     height: 100%;
     border-radius: 0px;
-    padding: 0px;
+    padding: 0.4em 0;
     border: 0px;
     text-align-last: center;
     margin: 0px;
+    text-align: center;
   }
   label.metric-checkbox.selected {
     color: white;
     font-weight: bold;
     background-color: black;
   }
-  fieldset.metrics label > input {
+  label.metric-checkbox:hover {
+    background-color: whitesmoke;
+  }
+  label.metric-checkbox.selected:hover {
+    background-color: black;
+  }
+  fieldset label > input {
     display: none;
   }
   #plot {
-    /* height: 100vh; */
     font-family: 'Times New Roman';
     font-size: 12px; /* Purposefully set and used to calculate the margin based on the device. Times New Roman is an extremely common font for devices, and using this handy calculator https://stackoverflow.com/a/118251/5935694 , Times New Roman's characters are about half the width of the pixels. So, 12px / 2 * the longest country name allows all country names to appear in full without being cut off. Ideally though, I'd be able to line break the country names or dynamically adjust the font size depending on the length of the country name, but idk how to do that yet and the common CSS things weren't garnering results. */
   }
@@ -462,9 +590,155 @@ If you do not believe that's the situation, please report an issue (use the link
       font-size: 20px;
     }
     fieldset {
-      font-size: 0.8em !important /* lazy, probably breaks something */
+      /* font-size: 0.8em !important lazy, probably breaks something */
+      padding: 0.2em;
     }
-}
+  }
+  div.loading {
+    background-color: white;
+    position: fixed;
+    height: 100px;
+    width: 100%;
+    top: 30%;
+    background: white;
+    z-index: 1000;
+  }
+  div.loading > .load-progress {
+    background-color: white;
+    margin: auto;
+    margin-top: 1em;
+    position: relative;
+    display: block;
+    width: 100%;
+    height: fit-content;
+    text-align: center;
+    font-size: 1.5em;
+  }
+  .search-container {
+    /* width: inherit; */
+    overflow-y: hidden;
+    overflow-x: scroll;
+    /* height: 100px; */
+    /* max-height: 200px; */
+    display: block;
+  }
+  .location-search-box {
+    width: 80%;
+    max-width: 400px;
+    min-width: 200px;
+    margin: 0.2em;
+    display: block;
+    /* position: absolute; */
+    padding: 0.2em;
+    text-shadow: 0 0 black;
+  }
+  .location-tag {
+    background-color: whitesmoke;
+    margin: 0.2em;
+    padding: 0.2em;
+    border-radius: 0.2em;
+    font-weight: 700;
+    border: 1px solid black;
+    width: fit-content;
+    float: left;
+    display: inline-block;
+    cursor: pointer;
+  }
+  .add-location {
+    margin: 0.1em;
+    padding: 0.1em 0.3em;
+    font-weight: 1000;
+    background-color: white;
+    border-radius: 0.2em;
+  }
+  .remove-location {
+    margin: 0.1em;
+    padding: 0.1em 0.3em;
+    font-weight: 1000;
+    background-color: black;
+    color: white;
+    border-radius: 0.2em;
+  }
+  .show-more-locations {
+    padding: 0.1em 0.3em;
+    background-color: whitesmoke;
+    margin: 0.2em;
+    padding: 0.2em;
+    border-radius: 0.2em;
+    font-weight: 700;
+    border: 1px solid black;
+    display: inline-block;
+  }
+  .tags {
+      width: max-content;
+      overflow-x: visible;
+      display: inline-block;
+  }
+
+  fieldset.location-search {
+      min-inline-size: auto;
+      overflow-x: hidden;
+      /* width: inherit; */
+      /* max-height: min-content; */
+  }
+  .no-results {
+    margin: 0.2em;
+    padding: 0.2em;
+    width: fit-content;
+    float: left;
+    display: inline-block;
+    color: grey;
+    font-style: italic;
+  }
+  /* START Not using this updating-chart & lds-ring at the moment. The positioning bits I learned still boggle my mind, so going to let those thoughts simmer and coalesce before refactoring it out. START */
+  div.updating-chart {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    z-index: 1000;
+    background: whitesmoke;
+    opacity: 0.4;
+  }
+  div.updating-chart > div {
+    width: 0;
+    position: relative;
+    padding: 15% 50% 15% 50%;
+    margin: 0 0 0 -32px;
+  }
+  .lds-ring { /* https://loading.io/css/ "Open source CSS loading animations dedicated for speed, simplicity & dev-friendly." <== ! \O/ ! (big ups) */
+    background: black;
+  }
+  .lds-ring div {
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    margin: 8px;
+    border: 8px solid #000;
+    border-radius: 50%;
+    animation: lds-ring 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border-color: #000 transparent transparent transparent;
+  }
+  .lds-ring div:nth-child(1) {
+    animation-delay: -0.45s;
+  }
+  .lds-ring div:nth-child(2) {
+    animation-delay: -0.3s;
+  }
+  .lds-ring div:nth-child(3) {
+    animation-delay: -0.15s;
+  }
+  @keyframes lds-ring {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  /* END Not using this updating-chart & lds-ring at the moment. The positioning bits I learned still boggle my mind, so going to let those thoughts simmer and coalesce before refactoring it out. END */
+
 </style>
 
 <body>
@@ -476,6 +750,10 @@ If you do not believe that's the situation, please report an issue (use the link
       </ul>
     </nav>
   </div>
+  <div class="loading">
+    <span class="load-progress Data">Fetching Data: 0%</span>
+    <span class="load-progress Charts">Fetching Charts: 0%</span>
+  </div>
   <header id="top">
     <h1>COVID Data Website</h1>
     <h4>The latest data visualized in a mobile-friendly, fast, accessible, and <a href="https://github.com/trycrmr/covid-data-discovery/blob/master/CONTRIBUTING.md" target="_blank" rel="noreferrer noopener" alt="Link to how to contribute to coviddata.website">community-driven</a> manner. <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an "issue"</a> with any trouble or opinions.</h4>
@@ -484,45 +762,33 @@ If you do not believe that's the situation, please report an issue (use the link
     </h6>
   </header>
   <hr />
-  <div class="sticky-form" id="top">
-    <details open="true"> 
-      <summary>Filters (Click to show/hide)</summary>
-      <form class="fitler-form">
-        <fieldset class="regions">
-          <legend>Choose a region or subregion</legend>
-          <div style="float: left;">
-            <fieldset class='sub-fieldset'>
-              <legend>Region</legend>
-              <select name="filter-regions">
-              </select>
-            </fieldset>
-          </div>
-          <div style="float: right;">
-            <fieldset class='sub-fieldset'>
-              <legend>Subregion
-                <label for="toggle-subregions">(show <input type="checkbox" name="toggle-subregions" style="vertical-align: middle; margin: 0px;">) </label>
-              </legend>
-              <select name="filter-subregions">
-              </select>
-            </fieldset>
-          </div>
-        </fieldset>
-        <fieldset class="metrics">
-          <legend>Choose a few metrics and derived metrics</legend>
-          <div style="float: left;">
-            <fieldset class='sub-fieldset'>
-              <legend>Metrics</legend>
-              <div>
-                <label class="metric-checkbox selected">Cases
-                  <input type="checkbox" value="cases" name="cases" checked>
-                </label>
-              </div>
-              <div>
-                <label class="metric-checkbox">Deaths
-                  <input type="checkbox" value="deaths" name="deaths">
-                </label>
-              </div>
-              <div style="float: right;">
+  <div class="sticky-things">
+    <div class="updating-chart" style="display: none;"><div>
+      <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+    </div></div>
+    <div class="sticky-form" id="top" style="opacity: 0;">
+      <details open="true"> 
+        <summary>Filters (Click to show/hide)</summary>
+        <form class="fitler-form">
+          <fieldset class="location-search">
+            <legend>Location Search</legend>
+            <div class="search-container">
+              <input class="location-search-box" name="location-search-box" type="text" placeholder="Type three letters..."/>
+              <div class="tags"></div>
+            </div>
+          </fieldset>
+              <fieldset>
+                <legend>Metrics</legend>
+                <div>
+                  <label class="metric-checkbox selected">Cases
+                    <input type="checkbox" value="cases" name="cases" checked>
+                  </label>
+                </div>
+                <div>
+                  <label class="metric-checkbox">Deaths
+                    <input type="checkbox" value="deaths" name="deaths">
+                  </label>
+                </div>
                 <fieldset class='sub-fieldset'>
                   <legend>Derived Metrics</legend>
                   <div>
@@ -551,12 +817,10 @@ If you do not believe that's the situation, please report an issue (use the link
                     </label>
                   </div>
                 </fieldset>
-              </div>
-            </fieldset>
-          </div>
-        </fieldset>
-      </form>
-    </details>
+              </fieldset>
+        </form>
+      </details>
+    </div>
   </div>
   <div id='plot'></div>
   <div class='table'></div>
@@ -566,48 +830,84 @@ If you do not believe that's the situation, please report an issue (use the link
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", async(event) => {
-  const getData = async(url, config) => {
-    try {
-      const data = await fetch(url, config)
-      const jsonData = await data.json()
-      return jsonData
-    } catch (err) {
-      console.error(err)
-    }
+  const app = new (await init()) // returns and instance of App
+
+// [{ url, options, prettyName: 'Data' }, { url, options, prettyName: 'Charts' }...]
+  const plotlyFetch = {
+    url: '/plotly-1.53.0.min.js.gz', // Ideally would freeze plotly version. Limit dependencies moving underfoot and now we could be more generous with Cache-Control in the request. 
+    options: {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/javascript',
+        'Cache-Control': 'no-cache, max-age=43200',
+        'Accept-Encoding': 'gzip;q=9.0'
+      }
+    },
+    prettyName: 'Charts'
+  }
+  const dataFetch = {
+    url: 'data.json.gz',
+    options: {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, max-age=43200',
+        'Accept-Encoding': 'gzip;q=9.0'
+      }
+    },
+    prettyName: 'Data'
   }
 
-  const thisData = await getData('data.json.gz', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=43200', // Allow the local cache (well, any cache) to keep this data around for 12 hours. 
-      'Accept-Encoding': 'gzip;q=9.0'
-    },
-  })
-  const app = new (init(thisData)) // returns and instance of App
-  app.updateForm()
+  const fetchResults = await app.fetchAll([plotlyFetch, dataFetch])
+  document.querySelector('.loading').setAttribute('style', 'display: none;') // When all the assets have finished loading hide the loading container 
+  app.updateState({ Plotly: fetchResults[0], data: fetchResults[1][0].data, meta: fetchResults[1][1].meta })
   app.updateTimestamp()
+  app.createFullLocationList()
+  document.querySelector('form').onkeypress = (e) => { // https://teamtreehouse.com/community/how-to-disable-submitting-a-form-when-i-press-on-the-enter-key
+    let key = e.charCode || e.keyCode || 0;
+    if (key == 13) {
+      e.preventDefault()
+
+      // This is a little convenience so the user does not need to take their hands off the keyboard. I mean, if they spam press enter, like, what are you doing? Stop.
+      let currentLocationInput = document.querySelector('input[name=location-search-box]').value
+      if(currentLocationInput.length > 3) { // First check length so the heavier check doesn't happen uselessly (no location names are shorter than three characters)
+        currentLocationInput = `${currentLocationInput[0].toUpperCase()}${currentLocationInput.substring(1)}` // so asia becomes Asia but Asia is Asia, right? If you're screaming ASIA go away. Pretty brittle if country is two words. Also want to add mappings of common nicknames of countries are whatever. This will do for now. Gotta make sure it's a performant implementation, even on spam press. 
+        if(app.state.allLocations.includes(currentLocationInput)) {
+          app.setFilters('region', currentLocationInput)
+          app.locationSearch(currentLocationInput)
+        }
+      }
+    }
+  }
+  // app.updateForm()
   // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
-  app.updatePlot('plot')
-  
-  document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
-  document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
+  app.locationSearch('') // Sets the initial filter as a location tag box to add & remove (has been "Earth", typically)
+  app.updatePlot('plot')  
+  document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
+
+  document.querySelector('input[name=location-search-box]').addEventListener('input', (event) => { app.locationSearch(event.target.value) })
+  // document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
+  // document.querySelector('select[name=filter-subregions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
   document.querySelectorAll('.metric-checkbox').forEach(thisNode => thisNode.addEventListener('click', (event) => {
     if(!event.target.value) return undefined
     if(event.target.checked && !(app.state.filters.metric.includes(event.target.value))) {
       event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
-      app.setFilters('metric', [ ...app.state.filters.metric, event.target.value ])
+      setTimeout(() => {
+        app.setFilters('metric', [ ...app.state.filters.metric, event.target.value ])
+      }, 10) // Give the browser a breath to update the UI
     } else if(!event.target.checked && app.state.filters.metric.length > 1) {
       event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
-      app.setFilters('metric', app.state.filters.metric.filter( metric => metric !== event.target.value ))
+      setTimeout(() => {
+        app.setFilters('metric', app.state.filters.metric.filter( metric => metric !== event.target.value ))
+      }, 10) // Give the browser a breath to update the UI
     } else {
       return undefined
     }
   }))
-  document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
-    if(!event.target.value) return undefined
-    return app.setFilters('showSubregions', event.target.checked)
-  })
+  // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
+  //   if(!event.target.value) return undefined
+  //   return app.setFilters('showSubregions', event.target.checked)
+  // })
 })
 </script>
 
