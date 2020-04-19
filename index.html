@@ -238,7 +238,6 @@ ${err}`) } ) // So if something weird happens over the network that results in a
       await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     }, 10) // Give the browser a breath to update the UI
-    document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`) // I forget what this accomplishes.
   }
   this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
     let length = arr.length;
