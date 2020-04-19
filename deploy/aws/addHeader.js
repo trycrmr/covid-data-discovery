@@ -8,10 +8,14 @@ exports.handler = async (event, context) => {
 
   switch(requestURI) {
     case '/data.json.gz':
-      response.headers[headerName] = [{ key: headerName, value: UNCOMPRESSED_DATA_SIZE }];
+      response.headers['File-Size'] = [{ key: 'File-Size', value: UNCOMPRESSED_DATA_SIZE }];
+      response.headers['Content-Encoding'] = [{ key: 'Content-Encoding', value: 'gzip' }];
+      response.headers['Content-Type'] = [{ key: 'Content-Type', value: 'application/json' }];
       return response
     case '/plotly-1.53.0.min.js.gz':
-      response.headers[headerName] = [{ key: headerName, value: UNCOMPRESSED_PLOTLY_SIZE }];
+      response.headers['File-Size'] = [{ key: headerName, value: UNCOMPRESSED_PLOTLY_SIZE }];
+      response.headers['Content-Encoding'] = [{ key: 'Content-Encoding', value: 'gzip' }];
+      response.headers['Content-Type'] = [{ key: 'Content-Type', value: 'application/javascript' }];
       return response
     default: 
       return response
