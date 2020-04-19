@@ -857,7 +857,6 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   document.querySelector('form').onkeypress = (e) => { // https://teamtreehouse.com/community/how-to-disable-submitting-a-form-when-i-press-on-the-enter-key
     let key = e.charCode || e.keyCode || 0;
     if (key == 13) {
-      console.info('enter pressed')
       e.preventDefault()
 
       // This is a little convenience so the user does not need to take their hands off the keyboard. I mean, if they spam press enter, like, what are you doing? Stop.
