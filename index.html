@@ -234,9 +234,9 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
     this.state.plot.target(id)
     document.querySelector('div.table').remove()
-    document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
-    setTimeout(() => {
-      Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+    setTimeout( async () => {
+      await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+      document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     }, 10) // Give the browser a breath to update the UI
     document.getElementsByTagName('body')[0].setAttribute('style', `height: ${Math.max( document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight )}px;`) // I forget what this accomplishes.
   }
@@ -423,8 +423,8 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   .sticky-form {
     z-index: 999;
-    /* overflow-y: scroll; */
     max-height: 320px;
+    background-color: white;
   }
   nav {
     position: -webkit-sticky;
@@ -542,7 +542,7 @@ If you do not believe that's the situation, please report an issue (use the link
   label.metric-checkbox.selected:hover {
     background-color: black;
   }
-  fieldset.metrics label > input {
+  fieldset label > input {
     display: none;
   }
   #plot {
@@ -768,10 +768,7 @@ If you do not believe that's the situation, please report an issue (use the link
               <div class="tags"></div>
             </div>
           </fieldset>
-          <fieldset class="metrics">
-            <legend>Choose a few metrics and derived metrics</legend>
-            <div style="float: left;">
-              <fieldset class='sub-fieldset'>
+              <fieldset>
                 <legend>Metrics</legend>
                 <div>
                   <label class="metric-checkbox selected">Cases
@@ -783,39 +780,35 @@ If you do not believe that's the situation, please report an issue (use the link
                     <input type="checkbox" value="deaths" name="deaths">
                   </label>
                 </div>
-                <div style="float: right;">
-                  <fieldset class='sub-fieldset'>
-                    <legend>Derived Metrics</legend>
-                    <div>
-                      <label class="metric-checkbox">Daily Case Change (#)
-                        <input type="checkbox" value="caseChange" name="cases">
-                      </label>
-                    </div>
-                    <div>
-                      <label class="metric-checkbox">Daily Case Change (%)
-                        <input type="checkbox" value="caseChangePercent" name="deaths">
-                      </label>
-                    </div>
-                    <div>
-                      <label class="metric-checkbox">Daily Deaths Change (#)
-                        <input type="checkbox" value="deathsChange" name="deaths">
-                      </label>
-                    </div>
-                    <div>
-                      <label class="metric-checkbox">Daily Deaths Change (%)
-                        <input type="checkbox" value="deathsChangePercent" name="deaths">
-                      </label>
-                    </div>
-                    <div>
-                      <label class="metric-checkbox">Survival Rate (%)
-                        <input type="checkbox" value="survivalRate" name="deaths">
-                      </label>
-                    </div>
-                  </fieldset>
-                </div>
+                <fieldset class='sub-fieldset'>
+                  <legend>Derived Metrics</legend>
+                  <div>
+                    <label class="metric-checkbox">Daily Case Change (#)
+                      <input type="checkbox" value="caseChange" name="cases">
+                    </label>
+                  </div>
+                  <div>
+                    <label class="metric-checkbox">Daily Case Change (%)
+                      <input type="checkbox" value="caseChangePercent" name="deaths">
+                    </label>
+                  </div>
+                  <div>
+                    <label class="metric-checkbox">Daily Deaths Change (#)
+                      <input type="checkbox" value="deathsChange" name="deaths">
+                    </label>
+                  </div>
+                  <div>
+                    <label class="metric-checkbox">Daily Deaths Change (%)
+                      <input type="checkbox" value="deathsChangePercent" name="deaths">
+                    </label>
+                  </div>
+                  <div>
+                    <label class="metric-checkbox">Survival Rate (%)
+                      <input type="checkbox" value="survivalRate" name="deaths">
+                    </label>
+                  </div>
+                </fieldset>
               </fieldset>
-            </div>
-          </fieldset>
         </form>
       </details>
     </div>
