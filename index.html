@@ -354,7 +354,7 @@ If you do not believe that's the situation, please report an issue (use the link
     height: fit-content;
     z-index: 999;
   }
-  .sticky-form {
+  .sticky-things {
     position: -webkit-sticky;
     position: sticky;
     top: 1em;
@@ -362,6 +362,9 @@ If you do not believe that's the situation, please report an issue (use the link
     height: fit-content;
     max-width: 780px;
     width: 100%;
+    z-index:998
+  }
+  .sticky-form {
     z-index: 999;
   }
   nav {
@@ -405,6 +408,7 @@ If you do not believe that's the situation, please report an issue (use the link
   details {
     margin: auto;
     padding: 0.1em;
+    /* position: relative; */
   }
   details > summary {
     list-style: none;
@@ -429,6 +433,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   form.fitler-form {
     background: white;
+    position: relative;
   }
   fieldset.regions {
     height: fit-content;
@@ -473,6 +478,12 @@ If you do not believe that's the situation, please report an issue (use the link
     font-weight: bold;
     background-color: black;
   }
+  label.metric-checkbox:hover {
+    background-color: whitesmoke;
+  }
+  label.metric-checkbox.selected:hover {
+    background-color: black;
+  }
   fieldset.metrics label > input {
     display: none;
   }
@@ -515,27 +526,93 @@ If you do not believe that's the situation, please report an issue (use the link
     fieldset {
       font-size: 0.8em !important /* lazy, probably breaks something */
     }
-}
-div.loading {
-  background-color: white;
-  position: fixed;
-  height: 100px;
-  width: 100%;
-  top: 30%;
-  background: white;
-  z-index: 1000;
-}
-div.loading > .load-progress {
-  background-color: white;
-  margin: auto;
-  margin-top: 1em;
-  position: relative;
-  display: block;
-  width: 100%;
-  height: fit-content;
-  text-align: center;
-  font-size: 1.5em;
-}
+  }
+  div.loading {
+    background-color: white;
+    position: fixed;
+    height: 100px;
+    width: 100%;
+    top: 30%;
+    background: white;
+    z-index: 1000;
+  }
+  div.loading > .load-progress {
+    background-color: white;
+    margin: auto;
+    margin-top: 1em;
+    position: relative;
+    display: block;
+    width: 100%;
+    height: fit-content;
+    text-align: center;
+    font-size: 1.5em;
+  }
+  div.updating-chart {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    /* position: sticky; */
+    /* top: 1em;
+    margin: auto;
+    height: 100vh;
+    width: 100vw; */
+    /* margin: auto; */
+    /* padding-top: 20%; */
+    z-index: 1000;
+    background: whitesmoke;
+    opacity: 0.4;
+    /* display: none; */
+  }
+  div.updating-chart > div {
+    /* background-color: green; */
+    /* height: 100%; */
+    /* width: 100%; */
+    width: 0;
+    /* position: relative; */
+    /* z-index: 1000; */
+    position: relative;
+    /* top: 40%; */
+    /* opacity: 0.4; */
+    /* top: 50%; */
+    /* left: 50%; */
+    padding: 15% 50% 15% 50%;
+    /* padding: 32px 0 0 32px; */
+    margin: 0 0 0 -32px;
+  }
+  .lds-ring { /* https://loading.io/css/ "Open source CSS loading animations dedicated for speed, simplicity & dev-friendly." <== ! \O/ ! (big ups) */
+    background: black;
+    /* position: absolute; */
+  }
+  .lds-ring div {
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    margin: 8px;
+    border: 8px solid #000;
+    border-radius: 50%;
+    animation: lds-ring 2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border-color: #000 transparent transparent transparent;
+  }
+  .lds-ring div:nth-child(1) {
+    animation-delay: -0.45s;
+  }
+  .lds-ring div:nth-child(2) {
+    animation-delay: -0.3s;
+  }
+  .lds-ring div:nth-child(3) {
+    animation-delay: -0.15s;
+  }
+  @keyframes lds-ring {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
 </style>
 
 <body>
@@ -559,79 +636,84 @@ div.loading > .load-progress {
     </h6>
   </header>
   <hr />
-  <div class="sticky-form" id="top" style="opacity: 0;">
-    <details open="true"> 
-      <summary>Filters (Click to show/hide)</summary>
-      <form class="fitler-form">
-        <fieldset class="regions">
-          <legend>Choose a region or subregion</legend>
-          <div style="float: left;">
-            <fieldset class='sub-fieldset'>
-              <legend>Region</legend>
-              <select name="filter-regions">
-              </select>
-            </fieldset>
-          </div>
-          <div style="float: right;">
-            <fieldset class='sub-fieldset'>
-              <legend>Subregion
-                <label for="toggle-subregions">(show <input type="checkbox" name="toggle-subregions" style="vertical-align: middle; margin: 0px;">) </label>
-              </legend>
-              <select name="filter-subregions">
-              </select>
-            </fieldset>
-          </div>
-        </fieldset>
-        <fieldset class="metrics">
-          <legend>Choose a few metrics and derived metrics</legend>
-          <div style="float: left;">
-            <fieldset class='sub-fieldset'>
-              <legend>Metrics</legend>
-              <div>
-                <label class="metric-checkbox selected">Cases
-                  <input type="checkbox" value="cases" name="cases" checked>
-                </label>
-              </div>
-              <div>
-                <label class="metric-checkbox">Deaths
-                  <input type="checkbox" value="deaths" name="deaths">
-                </label>
-              </div>
-              <div style="float: right;">
-                <fieldset class='sub-fieldset'>
-                  <legend>Derived Metrics</legend>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (#)
-                      <input type="checkbox" value="caseChange" name="cases">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (%)
-                      <input type="checkbox" value="caseChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (#)
-                      <input type="checkbox" value="deathsChange" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (%)
-                      <input type="checkbox" value="deathsChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Survival Rate (%)
-                      <input type="checkbox" value="survivalRate" name="deaths">
-                    </label>
-                  </div>
-                </fieldset>
-              </div>
-            </fieldset>
-          </div>
-        </fieldset>
-      </form>
-    </details>
+  <div class="sticky-things">
+    <div class="updating-chart"><div>
+      <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+    </div></div>
+    <div class="sticky-form" id="top" style="opacity: 0;">
+      <details open="true"> 
+        <summary>Filters (Click to show/hide)</summary>
+        <form class="fitler-form">
+          <fieldset class="regions">
+            <legend>Choose a region or subregion</legend>
+            <div style="float: left;">
+              <fieldset class='sub-fieldset'>
+                <legend>Region</legend>
+                <select name="filter-regions">
+                </select>
+              </fieldset>
+            </div>
+            <div style="float: right;">
+              <fieldset class='sub-fieldset'>
+                <legend>Subregion
+                  <label for="toggle-subregions">(show <input type="checkbox" name="toggle-subregions" style="vertical-align: middle; margin: 0px;">) </label>
+                </legend>
+                <select name="filter-subregions">
+                </select>
+              </fieldset>
+            </div>
+          </fieldset>
+          <fieldset class="metrics">
+            <legend>Choose a few metrics and derived metrics</legend>
+            <div style="float: left;">
+              <fieldset class='sub-fieldset'>
+                <legend>Metrics</legend>
+                <div>
+                  <label class="metric-checkbox selected">Cases
+                    <input type="checkbox" value="cases" name="cases" checked>
+                  </label>
+                </div>
+                <div>
+                  <label class="metric-checkbox">Deaths
+                    <input type="checkbox" value="deaths" name="deaths">
+                  </label>
+                </div>
+                <div style="float: right;">
+                  <fieldset class='sub-fieldset'>
+                    <legend>Derived Metrics</legend>
+                    <div>
+                      <label class="metric-checkbox">Daily Case Change (#)
+                        <input type="checkbox" value="caseChange" name="cases">
+                      </label>
+                    </div>
+                    <div>
+                      <label class="metric-checkbox">Daily Case Change (%)
+                        <input type="checkbox" value="caseChangePercent" name="deaths">
+                      </label>
+                    </div>
+                    <div>
+                      <label class="metric-checkbox">Daily Deaths Change (#)
+                        <input type="checkbox" value="deathsChange" name="deaths">
+                      </label>
+                    </div>
+                    <div>
+                      <label class="metric-checkbox">Daily Deaths Change (%)
+                        <input type="checkbox" value="deathsChangePercent" name="deaths">
+                      </label>
+                    </div>
+                    <div>
+                      <label class="metric-checkbox">Survival Rate (%)
+                        <input type="checkbox" value="survivalRate" name="deaths">
+                      </label>
+                    </div>
+                  </fieldset>
+                </div>
+              </fieldset>
+            </div>
+          </fieldset>
+        </form>
+      </details>
+    </div>
   </div>
   <div id='plot'></div>
   <div class='table'></div>
@@ -675,7 +757,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   app.updateTimestamp()
   app.updateForm()
   app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
-  app.updatePlot('plot')
+  app.updatePlot('plot')  
   document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
   
   document.querySelector('select[name=filter-regions]').addEventListener('change', (event) => app.setFilters('region', event.target.value))
