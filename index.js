@@ -5,6 +5,7 @@ const UNCOMPRESSED_DATA_SIZE = 14749554
 const UNCOMPRESSED_PLOTLY_SIZE = 3325432
 
 app.get('/', (req, res) => res.sendFile(`${__dirname}/index.html`))
+app.get('/favicon.ico', (req, res) => res.sendFile(`${__dirname}/favicon.ico`))
 app.get('/data.json.gz', (req, res) => {
   res.setHeader('Content-Encoding', 'gzip')
   res.setHeader('Transfer-Encoding', 'gzip')
