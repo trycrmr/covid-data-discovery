@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html class="no-js" lang="en-US">
 
 <head>
   <meta charset="utf-8">
@@ -151,10 +151,11 @@ ${err}`) } ) // So if something weird happens over the network that results in a
   this.locationSearch = (str, limit = 20) => { // Limit because, like, really, type another character and get more specific with your search if there are more than 20 results. Was 30, but there is a scrolling issue with that many options
     if(str.length === 1 || str.length === 2) return undefined // Cheap debounce. Like, no need to do so many operations for one or character search. C'mon. And the shortest locations are four characters long, so no locations are being left out.
     document.querySelector('.tags').remove()
-    let html = '<div class="tags">'
+    let html = '<div class="tags"><div class="selected-tags">'
     this.state.filters.region.forEach(thisRegion => {
       html += `<span class="location-tag">${thisRegion} <span class="remove-location">X</span></span>`
     })
+    html += '</div>'
 
     let count = 0
     if(str.length > 0 && !this.state.filters.region.includes(str)) {
@@ -620,6 +621,7 @@ If you do not believe that's the situation, please report an issue (use the link
     display: inline-block;
     width: 100%;
     overflow-x: visible;
+    margin-bottom: 0.25em;
   }
   .location-search-box {
     margin: 0.2em;
@@ -637,7 +639,7 @@ If you do not believe that's the situation, please report an issue (use the link
     padding: 0.2em;
     border-radius: 0.2em;
     font-weight: 700;
-    border: 1px solid black;
+    border: 0.05em solid black;
     width: fit-content;
     float: left;
     display: inline-block;
@@ -669,9 +671,13 @@ If you do not believe that's the situation, please report an issue (use the link
     display: inline-block;
   }
   .tags {
-      width: max-content;
-      overflow-x: visible;
-      display: inline-block;
+    width: max-content;
+    overflow-x: visible;
+    display: inline-block;
+  }
+  .selected-tags {
+    display: inline-block;
+    width: 100%;
   }
 
   fieldset.location-search {
@@ -910,5 +916,4 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   // })
 })
 </script>
-
 </html>
