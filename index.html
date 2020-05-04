@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="no-js" lang="">
+<html class="no-js" lang="en-US">
 
 <head>
   <meta charset="utf-8">
@@ -511,7 +511,6 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   fieldset {
     margin: auto;
-    text-align-last: justify;
     height: fit-content;
   }
   fieldset div {
@@ -612,15 +611,30 @@ If you do not believe that's the situation, please report an issue (use the link
     /* max-height: 200px; */
     display: block;
   }
+  .search-box-container {
+    display: inline-block;
+    width: 100%;
+    overflow-x: visible;
+    /* overflow-y: hidden; */
+    /* width: 600px; */
+  }
   .location-search-box {
-    width: 80%;
-    max-width: 400px;
-    min-width: 200px;
+    /* width: 80%; */
+    /* max-width: 400px; */
+    /* min-width: 200px; */
     margin: 0.2em;
-    display: block;
+    /* display: block; */
     /* position: absolute; */
     padding: 0.2em;
     text-shadow: 0 0 black;
+  }
+  .location-search-label {
+    color: #525252;
+    color: -internal-light-dark-color(black, white);
+    font-style: italic;
+    /* font-size: 0.8em; */
+    /* min-width: fit-content; */
+    /* display: inline-block; */
   }
   .location-tag {
     background-color: whitesmoke;
@@ -756,14 +770,17 @@ If you do not believe that's the situation, please report an issue (use the link
     <div class="updating-chart" style="display: none;"><div>
       <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
     </div></div>
-    <div class="sticky-form" id="top" style="opacity: 0;">
+    <div class="sticky-form" style="opacity: 0;">
       <details open="true"> 
         <summary>Filters (Click to show/hide)</summary>
         <form class="fitler-form">
           <fieldset class="location-search">
             <legend>Location Search</legend>
             <div class="search-container">
-              <input class="location-search-box" name="location-search-box" type="text" placeholder="Type three letters..."/>
+              <div class="search-box-container">
+                <input class="location-search-box" name="location-search-box" id="location-search-box" type="text" placeholder="Type three letters..."/>
+                <label for="location-search-box" class="location-search-label">Enter a location.</label>
+              </div>
               <div class="tags"></div>
             </div>
           </fieldset>
