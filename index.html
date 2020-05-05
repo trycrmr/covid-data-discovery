@@ -402,14 +402,45 @@ If you do not believe that's the situation, please report an issue (use the link
   h1, h2, h3, h4, h5, h6 {
     margin: 0.5em;
   }
+  details {
+    list-style: none;
+  }
+  .hide {
+    display: none !important;
+  }
+  .disable-scroll {
+    overflow-y: hidden;
+  }
+  .flex-vertically { /* https://stackoverflow.com/a/37923258/5935694 */
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    height: 100%;
+    overflow-y: auto;
+  }
   .sticky-nav {
     position: -webkit-sticky;
     position: sticky;
     top: 0px;
     right: 1em;
     background-color: white;
-    height: fit-content;
+    height: 100%;
+    width: 100%;
     z-index: 999;
+  }
+  .toggle-menu {
+    position: fixed;
+    bottom: 1em;
+    right: 1em;
+    z-index: 1000;
+    background-color: whitesmoke;
+    padding: 0.2em;
+    margin: 0.2em;
+    border-radius: 0.2em;
+    font-weight: 700;
+    border: 0.05em solid black;
+    /* font-size: 0.8em; */
+    cursor: pointer;
   }
   .sticky-things { /* In learning about z-index, here's a wrapper in case covering the form makes sense for some reason in the future. Was from some dev that isn't going to get deployed. Also, kinda don't want to refactor this out the off chance it's used again. That's more of an excuse though. ¯\_(ツ)_/¯ */
     position: -webkit-sticky;
@@ -426,23 +457,36 @@ If you do not believe that's the situation, please report an issue (use the link
     max-height: 320px;
     background-color: white;
   }
-  nav {
+  nav.main-menu {
     position: -webkit-sticky;
     position: fixed;
-    bottom: 1em;
-    right: 1em;
-    background-color: transparent;
+    top: 0;
+    left: 0;
+    background-color: whitesmoke;
     margin: auto;
-    height: fit-content;
+    /* height: max-content; */
+    height: 100%;
+    width: 100%;
     z-index: 999;
-    font-size: 12px;
-    line-height: 2em;
+    opacity: 98%;
+    /* overflow: scroll; */
   }
-  nav > ul {
+  nav.main-menu ul {
     list-style-type: none;
     padding: 0px;
-    margin: auto;
-    list-style-type: none;
+  }
+  nav.main-menu details {
+    padding: 0.5em 10%;
+    font-size: 1em;
+  }
+  nav.main-menu details summary::-webkit-details-marker {
+    display:none;
+  }
+  nav.main-menu summary {
+    cursor: pointer;
+    padding: 0.25em;
+    text-align: center;
+    font-size: 1.2em;
   }
   body {
     font-family: 'Times New Roman';
@@ -463,31 +507,52 @@ If you do not believe that's the situation, please report an issue (use the link
     color: black;
     text-align-last: center;
   }
-  details {
+  details.filters {
     margin: auto;
     padding: 0.1em;
   }
-  details > summary {
+  details.filters > summary {
     list-style: none;
     text-align: center;
-    font-size: 1em;
-    padding: 0.3em 0.3em;
+    /* padding: 0.3em 0.3em; */
     cursor: pointer;
+    width: fit-content;
+    margin: auto;
+    /* max-width: fit-content; */
+    /* color: white; */
+    font-weight: 700;
+    /* background-color: black; */
+    /* border-radius: 0.5em; */
+    background-color: whitesmoke;
+    margin: 0.2em auto;
+    padding: 0.2em;
+    border-radius: 0.2em;
+    border: 0.05em solid black;
   }
-  details summary::-webkit-details-marker {
+  details.filters summary::-webkit-details-marker {
     display:none;
   }
-  details:not([open]) {
-    max-width: fit-content;
-    color: white;
-    font-weight: bold;
-    background-color: black;
-    border-radius: 0.5em;
+  details.filters:not([open]) > summary {
+    font-size: 1em;
+    /* max-width: fit-content; */
+    /* color: white; */
+    /* font-weight: 700; */
+    /* background-color: black; */
+    /* border-radius: 0.5em; */
+
+    /* background-color: whitesmoke; */
+    /* margin: 0.2em auto; */
+    /* padding: 0.2em; */
+    /* border-radius: 0.2em; */
+    /* border: 0.05em solid black; */
+
+    /* color: black; */
   }
-  details[open] > summary {
-    background-color: white;
-    border-radius: 0.5em;
-    padding: 0.1e;
+  details.filters[open] > summary {
+    font-size: 0.8em;
+    /* background-color: white; */
+    /* border-radius: 0.5em; */
+    /* padding: 0.1e; */
   }
   form.fitler-form {
     background: white;
@@ -589,7 +654,7 @@ If you do not believe that's the situation, please report an issue (use the link
     width: 100%;
     top: 30%;
     background: white;
-    z-index: 1000;
+    z-index: 500;
   }
   div.loading > .load-progress {
     background-color: white;
@@ -736,12 +801,41 @@ If you do not believe that's the situation, please report an issue (use the link
 
 <body>
   <div class="sticky-nav">
-    <nav class="header">
-      <ul>
-        <li><a href="#table">Jump to Table</a></li>
-        <li><a href="#top">Jump to Top</a></li>
-      </ul>
+    <nav class="main-menu hide">
+      <div class="flex-vertically">
+        <details>
+          <summary>About</summary>
+          <p>Learn more about this project <a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">by reading the README on the Github repo</a>.</p>
+        </details>
+        <details>
+          <summary>Data Dictionary</summary>
+          <p>Cases include presumptive positive cases and probable cases, in accordance with CDC guidelines as of April 14.</p>
+          <p>Death totals in the US include confirmed and probable, in accordance with CDC guidelines as of April 14.</p>
+          <p>Survival Rate (%) = Number recorded deaths / Number confirmed cases.</p>
+          <p>Data Granularity: County level - US; Province/State level - China, Canada, Australia; Country level - all other countries.</p>
+          <p>All cases of COVID-19 in repatriated US citizens from the Diamond Princess are grouped together. These individuals have been assigned to various quarantine locations (in military bases and hospitals) around the US. This grouping is consistent with the CDC.</p>
+          <p>The names of locations included on the Website correspond with the official designations used by the <a href="https://www.iso.org/home.html" target="_blank" rel="noreferrer noopener" alt="Link to International Organization for Standardization website">International Organization for Standardization</a>.</p>
+        </details>
+        <details>
+          <summary>Data Sources</summary>
+          <p><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code that uses the JHU raw data to create Global aggregates.">code</a>).</p> 
+          <p>Note that the metrics on the <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt=" COVID-19 Dashboard by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University">COVID-19 Dashboard by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close. Updated daily shortly after Center for Systems Science and Engineering (CSSE) at Johns Hopkins University's updates.</p>
+        </details>
+        <details>
+          <summary>Suggest a Feature</summary>
+          <p>Suggest a feature to coviddata.website by <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">opening an issue on Github</a>.</p>
+        </details>
+        <details>
+          <summary>Contact</summary>
+          <p>Contact contributors to coviddata.website by <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">opening an issue on Github.</a></p>
+        </details>
+        <ul class="hide">
+          <li><a href="#table">Jump to Table</a></li>
+          <li><a href="#top">Jump to Top</a></li>
+        </ul>
+      </div>
     </nav>
+    <span class="toggle-menu">Show Menu</span>
   </div>
   <div class="loading">
     <span class="load-progress Data">Fetching Data: 0%</span>
@@ -750,8 +844,8 @@ If you do not believe that's the situation, please report an issue (use the link
   <header id="top">
     <h1>COVID Data Website</h1>
     <h4>The latest data visualized in a mobile-friendly, fast, accessible, and <a href="https://github.com/trycrmr/covid-data-discovery/blob/master/CONTRIBUTING.md" target="_blank" rel="noreferrer noopener" alt="Link to how to contribute to coviddata.website">community-driven</a> manner. <a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Report an issue on Github.">Report an "issue"</a> with any trouble or opinions.</h4>
-    <h6><a href="https://github.com/trycrmr/covid-data-discovery/blob/master/README.md" target="_blank" rel="noreferrer noopener" alt="Learn more about this project by reading the README on the Github repo">About</a><span class="bar-separator">|</span><a href="https://github.com/trycrmr/covid-data-discovery/issues" target="_blank" rel="noreferrer noopener" alt="Contact by opening an issue on Github.">Contact (Open an issue)</a><span class="bar-separator">|</span><span class="last-updated">Last updated: [timestamp loading...]</span></h6>
-    <h6><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code that uses the JHU raw data to create Global aggregates.">code</a>). Note that the metrics on <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt="Johns Hopkins Center for Systems Science and Engineering dashboard of their COVID-19 metrics">JHUCSSE's Dashboard</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close. Updated daily shortly after JHUCSSE's updates. 
+    <h6><span class="last-updated">Last updated: [timestamp loading...]</span></h6>
+    <h6> 
     </h6>
   </header>
   <hr />
@@ -760,8 +854,8 @@ If you do not believe that's the situation, please report an issue (use the link
       <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
     </div></div>
     <div class="sticky-form" style="opacity: 0;">
-      <details open="true"> 
-        <summary>Filters (Click to show/hide)</summary>
+      <details class="filters"> 
+        <summary>Show Filters</summary>
         <form class="fitler-form">
           <fieldset class="location-search">
             <legend>Location Search</legend>
@@ -826,6 +920,14 @@ If you do not believe that's the situation, please report an issue (use the link
 </body>
 <script>
 document.addEventListener("DOMContentLoaded", async(event) => {
+  document.querySelector('span.toggle-menu').addEventListener('click', (e) => {
+    document.querySelector('nav').classList.toggle('hide')
+    document.querySelector('body').classList.toggle('disable-scroll')
+    e.target.innerText = e.target.innerText === 'Show Menu' ? 'Hide Menu' : 'Show Menu'
+  })
+  document.querySelector('details.filters>summary').addEventListener('click', (e) => {
+    e.target.innerText = e.target.innerText === 'Show Filters' ? 'Hide Filters' : 'Show Filters'
+  })
   const app = new (await init()) // returns and instance of App
 
 // [{ url, options, prettyName: 'Data' }, { url, options, prettyName: 'Charts' }...]
