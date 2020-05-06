@@ -100,7 +100,7 @@ return function App (state = defaultState) {
           break;
         }
         bytesReceived += result.value.byteLength;
-        if(eventCount % 10 === 0 && eventCount > 0) {
+        if(eventCount % 20 === 0 && eventCount > 0) {
           this.updateLoadingUI({num: bytesReceived, total, name: fetchObj.prettyName})
           eventCount++
         } else {
@@ -248,7 +248,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     setTimeout( async () => {
       await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
-    }, 10) // Give the browser a breath to update the UI
+    }, 50) // Give the browser a breath to update the UI
   }
   this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
     let length = arr.length;
@@ -1002,12 +1002,12 @@ document.addEventListener("DOMContentLoaded", async(event) => {
       event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
       setTimeout(() => {
         app.setFilters('metric', [ ...app.state.filters.metric, event.target.value ])
-      }, 10) // Give the browser a breath to update the UI
+      }, 50) // Give the browser a breath to update the UI
     } else if(!event.target.checked && app.state.filters.metric.length > 1) {
       event.target.labels.forEach(thisLabel => thisLabel.classList.toggle('selected'))
       setTimeout(() => {
         app.setFilters('metric', app.state.filters.metric.filter( metric => metric !== event.target.value ))
-      }, 10) // Give the browser a breath to update the UI
+      }, 50) // Give the browser a breath to update the UI
     } else {
       return undefined
     }
