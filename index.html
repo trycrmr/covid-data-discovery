@@ -309,7 +309,8 @@ ${err}`) } ) // So if something weird happens over the network that results in a
                   }
                 }
               } 
-              obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
+              // obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
+              obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch)) 
               if(locationsWithoutData.length > 0 && locationNodes.length === 1) alert(`${curr.name} does not have any ${this.state.filters.prettyText[thisMetric]} data. This is okay! 
 
 It means this is either the first day cases or deaths were recorded for ${curr.name} and a percentage-based derived metric is selected or there haven't been any cases or deaths of COVID-19 reported so far! 
@@ -332,11 +333,16 @@ If you do not believe that's the situation, please report an issue (use the link
             legend: { "orientation": 'h', x: 0, y: 0 },
             xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
               ...plotLayout.xaxis,
+              type: 'date',
               mirror: 'allticks',
               side: plotData.length > 1 ? 'top' : 'bottom',
-              fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
+              fixedrange: false, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
               showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
-              tickformat: ','
+              tickformat: '%b %d',
+              dtick: 604800000.0, // unix millisecond format. Not sure what the decimal is for.
+              rangeslider: {
+                visible: false
+              }
             },
             yaxis: { ...plotLayout.yaxis,
               fixedrange: true,
