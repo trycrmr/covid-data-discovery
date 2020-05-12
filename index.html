@@ -26,9 +26,14 @@ const init = () => {
       }
     },
     debug: true,
-    plot: { target: (id = 'plot') => { return document.getElementById(id) },
-    config: undefined },
-    listeners: []
+    plot: { 
+      target: (id = 'plot') => { return document.getElementById(id) },
+      config: undefined 
+    },
+    table: {
+      timeFormat: { month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString
+    },
+    listeners: [],
   }  
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
@@ -381,13 +386,13 @@ If you do not believe that's the situation, please report an issue (use the link
       return acc += thisRow
     }, '<thead><tr><th></th>')
 
-    let dataPointCount = data[0].x.length
+    let dataPointIdx = data[0].x.length - 1
     let metricCount = data.length
     let rows = '<tbody>'
-    for (let i = 0; i < dataPointCount; i++) {
-      rows += `<tr><th>${data[0].x[i]}</th>`
+    for (; dataPointIdx >= 0; dataPointIdx--) {
+      rows += `<tr><th>${data[0].x[dataPointIdx].toLocaleDateString(undefined, this.state.table.timeFormat)}</th>`
       for (let j = 0; j < metricCount; j++) {
-        rows += `<td>${data[j].y[i]}</td>`
+        rows += `<td>${data[j].y[dataPointIdx]}</td>`
         if(metricCount - 1 === j) rows += `</tr>`
       }
     }
