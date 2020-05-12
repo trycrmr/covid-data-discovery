@@ -26,9 +26,14 @@ const init = () => {
       }
     },
     debug: true,
-    plot: { target: (id = 'plot') => { return document.getElementById(id) },
-    config: undefined },
-    listeners: []
+    plot: { 
+      target: (id = 'plot') => { return document.getElementById(id) },
+      config: undefined 
+    },
+    table: {
+      timeFormat: { month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString
+    },
+    listeners: [],
   }  
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
@@ -232,11 +237,11 @@ ${err}`) } ) // So if something weird happens over the network that results in a
   }
   this.updatePlot = async (id, type) => { 
     let thisPlotConfig = this.getPlotConfig(type, this.state.filters)
-    let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1]} } } } ) 
+    let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1], config: thisPlotConfig[2] } } } } ) 
     this.state.plot.target(id)
     document.querySelector('div.table').remove()
     setTimeout( async () => {
-      await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, { responsive: true }).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+      await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, newState.plot.config.config).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
     }, 10) // Give the browser a breath to update the UI
   }
@@ -247,6 +252,10 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     return arr.join(length > 2 ? ', ' : ' and ') // if longer than two characters join the array together with either commas or "and"
   }
   this.getPlotConfig = (type = 'time series', filters = this.state.filters, plotLayout = undefined) => {
+    let plotConfig = { // Odd naming, but the third argument to Plotly.newPlot() is technically called "config" https://plotly.com/javascript/plotlyjs-function-reference/#plotlynewplot
+      responsive: true,
+      doubleClickDelay: 500 // default is 300, but 500 is the Windows default. A user was having trouble https://github.com/trycrmr/covid-data-discovery/issues/90 
+    }
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
@@ -309,7 +318,8 @@ ${err}`) } ) // So if something weird happens over the network that results in a
                   }
                 }
               } 
-              obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
+              // obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch).toLocaleDateString(undefined, timeFormat)) 
+              obj.x = obj.x.map(thisUnixEpoch => new Date(thisUnixEpoch)) 
               if(locationsWithoutData.length > 0 && locationNodes.length === 1) alert(`${curr.name} does not have any ${this.state.filters.prettyText[thisMetric]} data. This is okay! 
 
 It means this is either the first day cases or deaths were recorded for ${curr.name} and a percentage-based derived metric is selected or there haven't been any cases or deaths of COVID-19 reported so far! 
@@ -332,11 +342,16 @@ If you do not believe that's the situation, please report an issue (use the link
             legend: { "orientation": 'h', x: 0, y: 0 },
             xaxis: { // puts the x-axis on the top of the page so the user can see the scale when the page loads and as they adjust the filters
               ...plotLayout.xaxis,
+              type: 'date',
               mirror: 'allticks',
               side: plotData.length > 1 ? 'top' : 'bottom',
-              fixedrange: true, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
+              fixedrange: false, // disables zoom; It can be disorienting and makes scrolling more difficult on mobile
               showspikes: true, // on hover, a dotted line will track to either axis and display the labels,
-              tickformat: ','
+              tickformat: '%b %d',
+              dtick: 604800000.0, // unix millisecond format. Not sure what the decimal is for.
+              rangeslider: {
+                visible: false
+              }
             },
             yaxis: { ...plotLayout.yaxis,
               fixedrange: true,
@@ -344,6 +359,14 @@ If you do not believe that's the situation, please report an issue (use the link
             }
           }  
         }
+
+        plotConfig = { ...plotConfig, 
+        ...{
+          // displaylogo: false // Put this here commented out to denote that I don't mind leaving the logo. If plot.ly gets some free publicity, good for them. It's my little way of giving a thumbs up to their open source work. 
+          modeBarButtonsToRemove: ["hoverClosestCartesian", "hoverCompareCartesian","zoomInGeo", "zoomOutGeo", "resetGeo", "hoverClosestGeo","zoom2d", "pan2d", "select2d", "lasso2d", "zoomIn2d", "zoomOut2d", "autoScale2d", "resetScale2d","zoom3d", "pan3d", "orbitRotation", "tableRotation", "handleDrag3d", "resetCameraDefault3d", "resetCameraLastSave3d", "hoverClosest3d","hoverClosestGl2d", "hoverClosestPie", "toggleHover", "resetViews", "toImage", "sendDataToCloud", "toggleSpikelines", "resetViewMapbox"]
+          .filter(thisButton => !['toImage', 'resetScale2d'].includes(thisButton)),
+          displayModeBar: true
+        }}
         break
       default:
         plotData = [
@@ -354,7 +377,7 @@ If you do not believe that's the situation, please report an issue (use the link
           }
         ]
     }
-    return [plotData, plotLayout]
+    return [plotData, plotLayout, plotConfig]
   }
   this.generateTable = (data, details) => {
     let header = data.reduce((acc, curr, currIdx, origArr) => {
@@ -363,13 +386,13 @@ If you do not believe that's the situation, please report an issue (use the link
       return acc += thisRow
     }, '<thead><tr><th></th>')
 
-    let dataPointCount = data[0].x.length
+    let dataPointIdx = data[0].x.length - 1
     let metricCount = data.length
     let rows = '<tbody>'
-    for (let i = 0; i < dataPointCount; i++) {
-      rows += `<tr><th>${data[0].x[i]}</th>`
+    for (; dataPointIdx >= 0; dataPointIdx--) {
+      rows += `<tr><th>${data[0].x[dataPointIdx].toLocaleDateString(undefined, this.state.table.timeFormat)}</th>`
       for (let j = 0; j < metricCount; j++) {
-        rows += `<td>${data[j].y[i]}</td>`
+        rows += `<td>${data[j].y[dataPointIdx]}</td>`
         if(metricCount - 1 === j) rows += `</tr>`
       }
     }
