@@ -40,25 +40,21 @@ return function App (state = defaultState) {
   this.state = state
   this.updateTimestamp = (timeString = `${new Date(this.state.meta.lastUpdated).toLocaleString(undefined, {month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', timeZoneName: 'short'})}`, className = '.last-updated') => { document.querySelector(className).innerText = `Last updated: ${timeString}` }
   this.updateState = (newState) => {
-    if(!(JSON.stringify(this.state) === JSON.stringify({ ...this.state, ...newState }))) {
-      if(this.state.debug) {
-        this.log('=== Current State ===')
-        this.log(this.state)
-        this.log('=== State update ===')
-        this.log(newState)
-      }
-      this.state = { ...this.state, ...newState }
-      if(newState.filters) this.updatePlot('plot')
-      if(this.state.debug) {
-        this.log('=== New State ===')
-        this.log(this.state)
-        this.log(' ')
-      }
-      // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
-      return this.state
-    } else {
-      return this.state
+    if(this.state.debug) {
+      this.log('=== Current State ===')
+      this.log(this.state)
+      this.log('=== State update ===')
+      this.log(newState)
     }
+    this.state = { ...this.state, ...newState }
+    if(newState.filters) this.updatePlot('plot') // This is really the only state listener needed at the moment, so listener capability is stubbed out.
+    if(this.state.debug) {
+      this.log('=== New State ===')
+      this.log(this.state)
+      this.log(' ')
+    }
+    // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
+    return this.state
   }
   this.updateLoadingUI = async obj => { // {num, total, name}
     const loadingUI = document.querySelector(`.${obj.name}`) // Not checking to see if it exists first because it is part of the initial load in the HTML. This could change if more things get loaded in.
