@@ -234,11 +234,24 @@ ${err}`) } ) // So if something weird happens over the network that results in a
   this.updatePlot = async (id, type) => { 
     let thisPlotConfig = this.getPlotConfig(type, this.state.filters)
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1], config: thisPlotConfig[2] } } } } ) 
-    this.state.plot.target(id)
+    // this.state.plot.target(id)
     document.querySelector('div.table').remove()
     setTimeout( async () => {
-      await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, newState.plot.config.config).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
-      document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+      let currentPlotDiv = document.querySelector('#plot')
+      if(currentPlotDiv.hasChildNodes()) { // If a plot already exists, update it instead of creating a new one
+        // console.info('*** updating chart ***')
+        while(currentPlotDiv.data.length > 0) {
+          Plotly.deleteTraces(currentPlotDiv, [0])
+        }
+        Plotly.addTraces(currentPlotDiv, newState.plot.config.data)
+        Plotly.relayout(currentPlotDiv, newState.plot.config.layout)
+        document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title }))
+        // await Plotly.update(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, undefined).catch(err => console.error(err)) // Handle 
+      } else {
+        // console.info('*** CREATING chart ***')
+        await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, newState.plot.config.config).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+        document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+      }
     }, 10) // Give the browser a breath to update the UI
   }
   this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
