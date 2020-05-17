@@ -14,7 +14,7 @@ const init = () => {
     meta: null,
     Plotly: null,
     formOptions: { region: ['Earth'], subregions: null },  
-    filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
+    filters: {region: ['Earth'], metric: ['cases'], showSubregions: false, perCapita: false,
       prettyText: {
         "cases": "Cases",
         "deaths": "Deaths",
@@ -225,6 +225,9 @@ ${err}`) } ) // So if something weird happens over the network that results in a
         return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
+      case 'perCapita':
+        console.info(filters)
+        return this.updateState( { filters: { ...this.state.filters, perCapita: filters } } ) // filters would be a boolean here
       case 'showSubregions':
         return this.updateState( { filters: { ...this.state.filters, showSubregions: filters } } )
       default:
@@ -888,47 +891,55 @@ If you do not believe that's the situation, please report an issue (use the link
               <div class="tags"></div>
             </div>
           </fieldset>
-              <fieldset>
-                <legend>Metrics</legend>
-                <div>
-                  <label class="metric-checkbox selected">Cases
-                    <input type="checkbox" value="cases" name="cases" checked>
-                  </label>
-                </div>
-                <div>
-                  <label class="metric-checkbox">Deaths
-                    <input type="checkbox" value="deaths" name="deaths">
-                  </label>
-                </div>
-                <fieldset class='sub-fieldset'>
-                  <legend>Derived Metrics</legend>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (#)
-                      <input type="checkbox" value="caseChange" name="cases">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (%)
-                      <input type="checkbox" value="caseChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (#)
-                      <input type="checkbox" value="deathsChange" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (%)
-                      <input type="checkbox" value="deathsChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Survival Rate (%)
-                      <input type="checkbox" value="survivalRate" name="deaths">
-                    </label>
-                  </div>
-                </fieldset>
-              </fieldset>
+          <fieldset>
+            <legend>Metrics</legend>
+            <div>
+              <label class="metric-checkbox selected">Cases
+                <input type="checkbox" value="cases" name="cases" checked>
+              </label>
+            </div>
+            <div>
+              <label class="metric-checkbox">Deaths
+                <input type="checkbox" value="deaths" name="deaths">
+              </label>
+            </div>
+            <fieldset class='sub-fieldset'>
+              <legend>Derived Metrics</legend>
+              <div>
+                <label class="metric-checkbox">Daily Case Change (#)
+                  <input type="checkbox" value="caseChange" name="cases">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Case Change (%)
+                  <input type="checkbox" value="caseChangePercent" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (#)
+                  <input type="checkbox" value="deathsChange" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (%)
+                  <input type="checkbox" value="deathsChangePercent" name="deaths">
+                </label>
+              </div>
+              <div>
+                <label class="metric-checkbox">Survival Rate (%)
+                  <input type="checkbox" value="survivalRate" name="deaths">
+                </label>
+              </div>
+            </fieldset>
+            <fieldset class='sub-fieldset'>
+              <legend>Toggle Per Capita ("Cases per 100,000 people")</legend>
+              <div>
+                <label class="per-capita-checkbox">Per Capita by 100,000
+                  <input type="checkbox" value="perCapita" name="perCapita"> <!-- Just passes true or false, which can be captured with event.target.checked. Value is only set because label will also fire of an event, but it does not have a value for "checked" -->
+                </label>
+              </div>
+            </fieldset>
+          </fieldset>
         </form>
       </details>
     </div>
@@ -1023,6 +1034,10 @@ document.addEventListener("DOMContentLoaded", async(event) => {
       return undefined
     }
   }))
+  document.querySelector('.per-capita-checkbox').addEventListener('click', (event) => { 
+    if(!event.target.value) return undefined
+    app.setFilters('perCapita', event.target.checked) 
+  })
   // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
   //   if(!event.target.value) return undefined
   //   return app.setFilters('showSubregions', event.target.checked)
