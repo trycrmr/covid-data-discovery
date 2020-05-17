@@ -298,8 +298,17 @@ ${err}`) } ) // So if something weird happens over the network that results in a
             try {
               let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', line: { color: thisColor }, markers: { color: thisColor }, name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
               // if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
-              obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
-              obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
+              if(this.state.filters.perCapita) { 
+                if(`${thisMetric}Per100000` in curr.totals.daily) {
+                  obj.x = [ ...Object.keys(curr.totals.daily[`${thisMetric}Per100000`]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
+                  obj.y = [ ...Object.values(curr.totals.daily[`${thisMetric}Per100000`]) ]
+                } else {
+                  alert(`${thisMetric}Per100000 does not exist for ${curr.name}.`)
+                }
+              } else {
+                obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
+                obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
+              }
               if(parseInt(obj.x[0]) > parseInt(obj.x[1])) { // band aid fix to preserve order. Date to metric key-value pairs are stored as a hashmap and that's making it real tough to ensure the order. https://github.com/trycrmr/covid-data-batch-server/issues/6
                 obj.x = obj.x.reverse()
                 obj.y = obj.y.reverse()
