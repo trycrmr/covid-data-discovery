@@ -44,6 +44,11 @@ const init = () => {
       timeFormat: { month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString
     },
     listeners: [],
+    alerts: {
+      hasFired: {
+        covidActNow: false
+      }
+    }
   }  
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
@@ -65,6 +70,14 @@ return function App (state = defaultState) {
     }
     // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
     return this.state
+  }
+  this.alertCovidActNow = () => {
+    if(this.state.alerts.hasFired.covidActNow) {
+      return undefined
+    } else {
+      alert('If interested in when your State or County in the United States should open, reference https://covidactnow.org.')
+      this.updateState({ alerts: { hasFired: { covidActNow: true }}})
+    }
   }
   this.updateLoadingUI = async obj => { // {num, total, name}
     const loadingUI = document.querySelector(`.${obj.name}`) // Not checking to see if it exists first because it is part of the initial load in the HTML. This could change if more things get loaded in.
