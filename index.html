@@ -636,6 +636,17 @@ If you do not believe that's the situation, please report an issue (use the link
   label.metric-checkbox.selected:hover {
     background-color: black;
   }
+  label.per-capita-checkbox.selected {
+    color: white;
+    font-weight: bold;
+    background-color: black;
+  }
+  label.per-capita-checkbox:hover {
+    background-color: whitesmoke;
+  }
+  label.per-capita-checkbox.selected:hover {
+    background-color: black;
+  }
   fieldset label > input {
     display: none;
   }
@@ -919,26 +930,26 @@ If you do not believe that's the situation, please report an issue (use the link
                   <input type="checkbox" value="caseChange" name="cases">
                 </label>
               </div>
-              <div>
+              <!-- <div>
                 <label class="metric-checkbox">Daily Case Change (%)
                   <input type="checkbox" value="caseChangePercent" name="deaths">
                 </label>
-              </div>
+              </div> -->
               <div>
                 <label class="metric-checkbox">Daily Deaths Change (#)
                   <input type="checkbox" value="deathsChange" name="deaths">
                 </label>
               </div>
-              <div>
+              <!-- <div>
                 <label class="metric-checkbox">Daily Deaths Change (%)
                   <input type="checkbox" value="deathsChangePercent" name="deaths">
                 </label>
-              </div>
-              <div>
+              </div> -->
+              <!-- <div>
                 <label class="metric-checkbox">Survival Rate (%)
                   <input type="checkbox" value="survivalRate" name="deaths">
                 </label>
-              </div>
+              </div> -->
             </fieldset>
             <fieldset class='sub-fieldset'>
               <legend>Toggle Per Capita ("Cases per 100,000 people")</legend>
@@ -1045,6 +1056,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   }))
   document.querySelector('.per-capita-checkbox').addEventListener('click', (event) => { 
     if(!event.target.value) return undefined
+    event.target.labels[0].classList.toggle('selected')
     app.setFilters('perCapita', event.target.checked) 
   })
   // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
