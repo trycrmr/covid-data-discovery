@@ -56,6 +56,9 @@ return function App (state = defaultState) {
     // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
     return this.state
   }
+  this.updatePlotTitle = newTitle => {
+    document.querySelector('.floating-plot-title').innerText = newTitle
+  }
   this.updateLoadingUI = async obj => { // {num, total, name}
     const loadingUI = document.querySelector(`.${obj.name}`) // Not checking to see if it exists first because it is part of the initial load in the HTML. This could change if more things get loaded in.
     if(obj.num === obj.total) {
@@ -242,6 +245,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     setTimeout( async () => {
       await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, newState.plot.config.config).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+      this.updatePlotTitle(newState.plot.config.layout.title.text)
     }, 10) // Give the browser a breath to update the UI
   }
   this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
@@ -258,16 +262,24 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
-    plotLayout = { title: `${
+    plotLayout = { title: {
+      text: `${
       this.conjunctionize(
         this.state.filters.metric
         .map(thisMetric => this.state.filters.prettyText[thisMetric])
         .sort((a, b) => a.localeCompare(b))
       )
-      } for ${this.conjunctionize(this.state.filters.region.map(e=>e))}` // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
+      } for ${this.conjunctionize(this.state.filters.region.map(e=>e))}`, // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
+      font: {
+        color: '#FFF', // Hide the plotly title
+        size: 1
+      }
+    }
+      
     },
     plotLayout = { 
       ...plotLayout,
+      margin: { t: 70 }, // Removes the space the 
       font: {
         family: getComputedStyle(document.getElementById('plot')).fontFamily,
         size: getComputedStyle(document.getElementById('plot')).fontSize,
@@ -567,7 +579,7 @@ If you do not believe that's the situation, please report an issue (use the link
     font-size: 1em;
     /* max-width: fit-content; */
     /* color: white; */
-    /* font-weight: 700; */
+    font-weight: 400;
     /* background-color: black; */
     /* border-radius: 0.5em; */
 
@@ -638,7 +650,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   label.per-capita-checkbox.selected {
     color: white;
-    font-weight: bold;
+    font-weight: 700;
     background-color: black;
   }
   label.per-capita-checkbox:hover {
@@ -789,6 +801,14 @@ If you do not believe that's the situation, please report an issue (use the link
     display: inline-block;
     color: grey;
     font-style: italic;
+  }
+  .floating-plot-title {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    /* height: fit-content; */
+    background-color: white;
   }
   /* START Not using this updating-chart & lds-ring at the moment. The positioning bits I learned still boggle my mind, so going to let those thoughts simmer and coalesce before refactoring it out. START */
   div.updating-chart {
@@ -962,6 +982,7 @@ If you do not believe that's the situation, please report an issue (use the link
           </fieldset>
         </form>
       </details>
+      <div class="floating-plot-title">poop</div>
     </div>
   </div>
   <div id='plot'></div>
