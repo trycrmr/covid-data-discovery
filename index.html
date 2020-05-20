@@ -14,7 +14,7 @@ const init = () => {
     meta: null,
     Plotly: null,
     formOptions: { region: ['Earth'], subregions: null },  
-    filters: {region: ['Earth'], metric: ['cases'], showSubregions: false, perCapita: false,
+    filters: {region: ['Earth'], metric: ['deaths'], showSubregions: false, perCapita: false,
       prettyText: {
         "cases": "Cases",
         "deaths": "Deaths",
@@ -55,6 +55,52 @@ return function App (state = defaultState) {
     }
     // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
     return this.state
+  }
+  this.getRandomElement = (arr) => {
+    return Math.floor(Math.random() * Math.floor(arr.length))
+  }
+  this.getRandomContinent = (exclusions = ['Diamond Princess', 'MS Zaandam']) => {
+    return Object.keys(this.state.data.subregions)
+    .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey) )[
+      this.getRandomElement(
+        Object.keys(this.state.data.subregions)
+        .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey))
+      )
+    ]
+  }
+  this.getRandomCountry = (exclusions = ['United States']) => {
+    let randomContinentName = this.getRandomContinent()
+    return Object.keys(this.state.data.subregions[randomContinentName].subregions)
+    .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey) )[
+      this.getRandomElement(
+        Object.keys(this.state.data.subregions[randomContinentName].subregions)
+        .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey))
+      )
+    ]
+  }
+  this.getRandomUSState = () => {
+    let usSubregionList = Object.keys(this.findLocation('United States').subregions)
+    return usSubregionList[
+      this.getRandomElement(
+        usSubregionList)
+    ]
+  }
+  this.getRandomUSCounty = () => {
+    let stateSubregionList = Object.keys(this.findLocation(this.getRandomUSState()).subregions)
+    if(stateSubregionList.length > 0) {
+      return stateSubregionList[
+      this.getRandomElement(
+        stateSubregionList)
+      ]
+    } else {
+      this.getRandomUSCounty() // If this state doesn't have any counties, just get a different one. Keep doing that until one is found.
+    }
+  }
+  this.plotRandomLocations = () => { // plots five random locations
+    // random continent
+    let randomishLocations = [ this.getRandomContinent(), this.getRandomCountry(), 'United States', this.getRandomUSState(), this.getRandomUSCounty() ]
+    let stateUpdate = { filters: { ...this.state.filters, region: randomishLocations, perCapita: true } }
+    this.updateState(stateUpdate)
   }
   this.updatePlotTitle = newTitle => {
     document.querySelector('.floating-plot-title').innerText = newTitle
@@ -269,7 +315,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
         .map(thisMetric => this.state.filters.prettyText[thisMetric])
         .sort((a, b) => a.localeCompare(b))
       )
-      }${this.state.filters.region.length <= 1 ? '' : this.state.filters.perCapita ? ', per 100,000 folks,' : ', not population-adjusted,'} for ${this.conjunctionize(this.state.filters.region.map(e=>e))}`, // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
+      }${this.state.filters.perCapita ? ', per 100,000 folks,' : ', not population-adjusted,'} for ${this.conjunctionize(this.state.filters.region.map(e=>e))}`, // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
       font: {
         color: '#FFF', // Hide the plotly title
         size: 1
@@ -1059,7 +1105,8 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   // app.updateForm()
   // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.locationSearch('') // Sets the initial filter as a location tag box to add & remove (has been "Earth", typically)
-  app.updatePlot('plot')  
+  // app.updatePlot('plot') 
+  app.plotRandomLocations() 
   document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
 
   document.querySelector('input[name=location-search-box]').addEventListener('input', (event) => { app.locationSearch(event.target.value) })
