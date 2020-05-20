@@ -686,7 +686,7 @@ If you do not believe that's the situation, please report an issue (use the link
     height: fit-content;
   }
   fieldset div {
-    display: inline;
+    display: block;
   }
   label.metric-checkbox {
     background-color: white;
@@ -876,6 +876,47 @@ If you do not believe that's the situation, please report an issue (use the link
     color: grey;
     font-style: italic;
   }
+  .two-toggle-button-group {
+    width: 100%;
+    text-align: center;
+    /* height: auto; */
+    /* align-content: center; */
+    /* align-items: center; */
+  }
+  .two-toggle-button-container {
+    width: 48%;
+    margin: 0.3em -0.5%;
+    /* height: 100px; */
+    /* border: 1px solid red; */
+    /* text-align: center; */
+    /* align-content: center; */
+    /* align-items: center; */
+    display: inline-grid;
+    line-height: 1.5em;
+  }
+  .two-toggle-button {
+    background-color: whitesmoke;
+    padding: 0.2em;
+    /* border-radius: 1em 0 0em 1em; */
+    font-weight: 700;
+    border: 0.05em solid black;
+    /* width: auto; */
+    display: inline-block;
+    cursor: pointer;
+    /* margin: auto; */
+    /* float: left; */
+  }
+  .two-toggle-button-right {
+    border-radius: 0em 1em 1em 0em;
+  }
+  .two-toggle-button-left {
+    border-radius: 1em 0em 0em 1em;
+  }
+  .two-toggle-button.pressed {
+    background-color: black;
+    color: whitesmoke;
+    /* border: 0.05em solid whitesmoke; */
+  }
   .floating-plot-title {
     width: 100%;
     text-align: center;
@@ -992,7 +1033,7 @@ If you do not believe that's the situation, please report an issue (use the link
       <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
     </div></div>
     <div class="sticky-form" style="opacity: 0;">
-      <details class="filters"> 
+      <details class="filters" open> 
         <summary>Show Filters</summary>
         <form class="fitler-form">
           <fieldset class="location-search">
@@ -1006,6 +1047,30 @@ If you do not believe that's the situation, please report an issue (use the link
             </div>
           </fieldset>
           <fieldset>
+            <legend>Options</legend>
+              <div class="two-toggle-button-group">
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button per-capita two-toggle-button-left">Adjusted For Population</span>
+                </div>
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button per-capita two-toggle-button-right pressed">Raw Counts</span>
+                </div>
+              </div>
+              <!-- <div class="two-toggle-button-group">
+                <span class="two-toggle-button per-capita left">Adjusted For Population</span>
+                <span class="two-toggle-button per-capita right">Raw Counts</span>
+              </div>
+              <div class="two-toggle-button-group">
+                <span class="two-toggle-button per-capita left">Adjusted For Population</span>
+                <span class="two-toggle-button per-capita right">Raw Counts</span>
+              </div>
+              <div class="two-toggle-button-group">
+                <span class="two-toggle-button per-capita left">Adjusted For Population</span>
+                <span class="two-toggle-button per-capita right">Raw Counts</span>
+              </div> -->
+          </fieldset>
+
+          <fieldset style="display: none;">
             <legend>Metrics</legend>
             <div>
               <label class="metric-checkbox selected">Cases
@@ -1054,6 +1119,7 @@ If you do not believe that's the situation, please report an issue (use the link
               </div>
             </fieldset>
           </fieldset>
+
         </form>
       </details>
       <div class="floating-plot-title"></div>
@@ -1129,7 +1195,8 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.locationSearch('') // Sets the initial filter as a location tag box to add & remove (has been "Earth", typically)
   // app.updatePlot('plot') 
-  app.plotRandomLocations() 
+  app.plotRandomLocations()
+  app.locationSearch('refresh location search UI') // Refreshes the location search UI with the random locations chosen
   document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
 
   document.querySelector('input[name=location-search-box]').addEventListener('input', (event) => { app.locationSearch(event.target.value) })
