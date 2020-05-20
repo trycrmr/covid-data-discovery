@@ -474,10 +474,10 @@ If you do not believe that's the situation, please report an issue (use the link
     if(newState.filters.perCapita) {
       let locationNodes = newState.filters.region.map(thisRegion => this.findLocation(thisRegion))
       allCalcHtml = locationNodes.reduce((acc, curr, currIdx, origArr) => {
-        return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)}. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
+        return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)} people. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
         // return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)}. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
       }, '')
-      allCalcHtml = `Per capita calculations use the following population estimates generated from 2019 United States Census Department estimates (U.S. Counties and States), 2019 United Nations estimates (Countries), and aggregates for continents and Earth deduced from there. Continent and planet aggregates will underestimate populations because not all countries are included in the COVID data reports. They just aren't captured in the data that informs this website at this time either because they aren't reporting COVID data publicly or for other reasons.${allCalcHtml}`
+      allCalcHtml = `Per capita calculations use the following population estimates generated from <a href="https://www.census.gov/data/tables/time-series/demo/popest/2010s-counties-total.html" target="_blank" rel="noreferrer noopener" alt="Link to United States Census Department estimates">2019 United States Census Department estimates for U.S. Counties and States</a>, <a href="https://population.un.org/wpp/Download/Standard/Population/" target="_blank" rel="noreferrer noopener" alt="Link to United Nations population estimates">2019 United Nations estimates for Countries</a>, and aggregates for continents and Earth deduced from there. Continent and planet aggregates will underestimate populations because not all countries are included in the COVID data reports. They just aren't captured in the data that informs this website at this time either because they aren't reporting COVID data publicly or for other reasons.${allCalcHtml}`
     }
     let html = `<div class="per-capita-calculations">${allCalcHtml}</div>`
     return document.createRange().createContextualFragment(html)
@@ -732,6 +732,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   .table {
     margin: 1em;
+    padding-top: 0.2em;
     height: fit-content;
     overflow: auto;
   }
@@ -742,6 +743,9 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   table caption {
     text-align: left;
+  }
+  .per-capita-calculations {
+    margin: 1em;
   }
   th, td, tr {
     border: 1px solid black;
