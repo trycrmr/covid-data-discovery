@@ -18,9 +18,9 @@ const init = () => {
       prettyText: {
         "cases": "Cases",
         "deaths": "Deaths",
-        "caseChange": "Daily Case Change (#)",
+        "caseChange": "Daily Case Change",
         "caseChangePercent": "Daily Case Change (%)",
-        "deathsChange": "Daily Deaths Change (#)",
+        "deathsChange": "Daily Deaths Change",
         "deathsChangePercent": "Daily Deaths Change (%)",
         "survivalRate": "Survival Rate (%)"
       }
@@ -273,9 +273,8 @@ ${err}`) } ) // So if something weird happens over the network that results in a
         if(this.state.filters.region.includes(filters)) return undefined // Don't do anything if there is only one filter
         return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
       case 'metric':
-        return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
+        return this.updateState( { filters: { ...this.state.filters, metric: [ filters ] } } )
       case 'perCapita':
-        console.info(filters)
         return this.updateState( { filters: { ...this.state.filters, perCapita: filters } } ) // filters would be a boolean here
       case 'showSubregions':
         return this.updateState( { filters: { ...this.state.filters, showSubregions: filters } } )
@@ -769,10 +768,13 @@ If you do not believe that's the situation, please report an issue (use the link
       padding: 0.2em;
     }
     .floating-plot-title {
-      font-size: 1em;
+      font-size: 0.8em;
     }
     h4 {
       font-size: 0.8em;
+    }
+    .two-toggle-button {
+      /* font-size: 0.8em; */
     }
   }
   div.loading {
@@ -885,7 +887,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   .two-toggle-button-container {
     width: 48%;
-    margin: 0.3em -0.5%;
+    margin: 0.1em -0.5%;
     /* height: 100px; */
     /* border: 1px solid red; */
     /* text-align: center; */
@@ -905,12 +907,17 @@ If you do not believe that's the situation, please report an issue (use the link
     cursor: pointer;
     /* margin: auto; */
     /* float: left; */
+    white-space: nowrap;
   }
   .two-toggle-button-right {
     border-radius: 0em 1em 1em 0em;
+    border-left: none;
+    padding-left: 0px;
   }
   .two-toggle-button-left {
     border-radius: 1em 0em 0em 1em;
+    border-right: none;
+    padding-right: 0px;
   }
   .two-toggle-button.pressed {
     background-color: black;
@@ -923,7 +930,7 @@ If you do not believe that's the situation, please report an issue (use the link
     font-weight: bold;
     font-size: 1.2em;
     /* height: fit-content; */
-    /* background-color: white; */
+    background-color: white;
   }
   /* START Not using this updating-chart & lds-ring at the moment. The positioning bits I learned still boggle my mind, so going to let those thoughts simmer and coalesce before refactoring it out. START */
   div.updating-chart {
@@ -1033,7 +1040,7 @@ If you do not believe that's the situation, please report an issue (use the link
       <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
     </div></div>
     <div class="sticky-form" style="opacity: 0;">
-      <details class="filters" open> 
+      <details class="filters"> 
         <summary>Show Filters</summary>
         <form class="fitler-form">
           <fieldset class="location-search">
@@ -1048,12 +1055,28 @@ If you do not believe that's the situation, please report an issue (use the link
           </fieldset>
           <fieldset>
             <legend>Options</legend>
+            <div class="two-toggle-button-group">
+              <div class="two-toggle-button-container">
+                <span class="two-toggle-button casesdeaths two-toggle-button-left pressed">Deaths</span>
+              </div>
+              <div class="two-toggle-button-container">
+                <span class="two-toggle-button casesdeaths two-toggle-button-right">Cases</span>
+              </div>
+            </div>
               <div class="two-toggle-button-group">
                 <div class="two-toggle-button-container">
-                  <span class="two-toggle-button per-capita two-toggle-button-left">Adjusted For Population</span>
+                  <span class="two-toggle-button per-capita two-toggle-button-left">Raw Counts</span>
                 </div>
                 <div class="two-toggle-button-container">
-                  <span class="two-toggle-button per-capita two-toggle-button-right pressed">Raw Counts</span>
+                  <span class="two-toggle-button per-capita two-toggle-button-right pressed">Per 100,000</span>
+                </div>
+              </div>
+              <div class="two-toggle-button-group">
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button dailycumulative two-toggle-button-left pressed">Cumulative</span>
+                </div>
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button dailycumulative two-toggle-button-right">Daily</span>
                 </div>
               </div>
               <!-- <div class="two-toggle-button-group">
@@ -1223,6 +1246,55 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     event.target.labels[0].classList.toggle('selected')
     app.setFilters('perCapita', event.target.checked) 
   })
+  document.querySelectorAll('.casesdeaths').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    document.querySelectorAll('.casesdeaths').forEach(thisNode => thisNode.classList.toggle('pressed'))
+    switch(app.state.filters.metric[0]) {
+      case 'cases':
+        app.setFilters('metric', 'deaths')
+        break
+      case 'caseChange':
+        app.setFilters('metric', 'deathsChange')
+        break
+      case 'deaths':
+        app.setFilters('metric', 'cases')
+        break
+      case 'deathsChange':
+        app.setFilters('metric', 'caseChange')
+        break
+      default: 
+        // code should never get here
+        console.error('In default switch that shouldnt trigger')
+        break
+    }
+    console.info('test casesdeaths')
+  }))
+  document.querySelectorAll('.per-capita').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    document.querySelectorAll('.per-capita').forEach(thisNode => thisNode.classList.toggle('pressed'))
+    console.info('test per-capita')
+    app.setFilters('perCapita', app.state.filters.perCapita ? false : true)
+  }))
+  document.querySelectorAll('.dailycumulative').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    document.querySelectorAll('.dailycumulative').forEach(thisNode => thisNode.classList.toggle('pressed'))
+    switch(app.state.filters.metric[0]) {
+      case 'cases':
+        app.setFilters('metric', 'caseChange')
+        break
+      case 'caseChange':
+        app.setFilters('metric', 'cases')
+        break
+      case 'deaths':
+        app.setFilters('metric', 'deathsChange')
+        break
+      case 'deathsChange':
+        app.setFilters('metric', 'deaths')
+        break
+      default: 
+        // code should never get here
+        console.error('In default switch that shouldnt trigger')
+        break
+    }
+    console.info('test dailycumulative')
+  }))
   // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
   //   if(!event.target.value) return undefined
   //   return app.setFilters('showSubregions', event.target.checked)
