@@ -288,8 +288,10 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1], config: thisPlotConfig[2] } } } } ) 
     this.state.plot.target(id)
     document.querySelector('div.table').remove()
+    document.querySelector('div.per-capita-calculations').remove()
     setTimeout( async () => {
       await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, newState.plot.config.config).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+      document.getElementById(id).append(this.generatePerCapitaCalcs(newState))
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
       this.updatePlotTitle(newState.plot.config.layout.title.text)
     }, 10) // Give the browser a breath to update the UI
@@ -458,7 +460,7 @@ If you do not believe that's the situation, please report an issue (use the link
     for (; dataPointIdx >= 0; dataPointIdx--) {
       rows += `<tr><th>${data[0].x[dataPointIdx].toLocaleDateString(undefined, this.state.table.timeFormat)}</th>`
       for (let j = 0; j < metricCount; j++) {
-        rows += `<td>${data[j].y[dataPointIdx]}</td>`
+        rows += `<td>${this.addCommasToNumber(data[j].y[dataPointIdx])}</td>`
         if(metricCount - 1 === j) rows += `</tr>`
       }
     }
@@ -466,6 +468,22 @@ If you do not believe that's the situation, please report an issue (use the link
     let html = `<div class="table" id="table"><table><caption>${details.title}</caption>${header}${rows}`
     html += `</tbody></table></div>`
     return document.createRange().createContextualFragment(html)
+  }
+  this.generatePerCapitaCalcs = (newState) => {
+    let allCalcHtml = ''
+    if(newState.filters.perCapita) {
+      let locationNodes = newState.filters.region.map(thisRegion => this.findLocation(thisRegion))
+      allCalcHtml = locationNodes.reduce((acc, curr, currIdx, origArr) => {
+        return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)}. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
+        // return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)}. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
+      }, '')
+      allCalcHtml = `Per capita calculations use the following population estimates generated from 2019 United States Census Department estimates (U.S. Counties and States), 2019 United Nations estimates (Countries), and aggregates for continents and Earth deduced from there. Continent and planet aggregates will underestimate populations because not all countries are included in the COVID data reports. They just aren't captured in the data that informs this website at this time either because they aren't reporting COVID data publicly or for other reasons.${allCalcHtml}`
+    }
+    let html = `<div class="per-capita-calculations">${allCalcHtml}</div>`
+    return document.createRange().createContextualFragment(html)
+  }
+  this.addCommasToNumber = num => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 }
 
@@ -1038,6 +1056,7 @@ If you do not believe that's the situation, please report an issue (use the link
     </div>
   </div>
   <div id='plot'></div>
+  <div class='per-capita-calculations'></div>
   <div class='table'></div>
   <!--[if IE]>
     <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
