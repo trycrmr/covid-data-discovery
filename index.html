@@ -576,10 +576,10 @@ If you do not believe that's the situation, please report an issue (use the link
     display:none;
   }
   details.filters:not([open]) > summary {
-    font-size: 1em;
+    font-size: 0.8em;
     /* max-width: fit-content; */
     /* color: white; */
-    font-weight: 400;
+    /* font-weight: 400; */
     /* background-color: black; */
     /* border-radius: 0.5em; */
 
@@ -700,6 +700,12 @@ If you do not believe that's the situation, please report an issue (use the link
     fieldset {
       padding: 0.2em;
     }
+    .floating-plot-title {
+      font-size: 1em;
+    }
+    h4 {
+      font-size: 0.8em;
+    }
   }
   div.loading {
     background-color: white;
@@ -808,7 +814,7 @@ If you do not believe that's the situation, please report an issue (use the link
     font-weight: bold;
     font-size: 1.2em;
     /* height: fit-content; */
-    background-color: white;
+    /* background-color: white; */
   }
   /* START Not using this updating-chart & lds-ring at the moment. The positioning bits I learned still boggle my mind, so going to let those thoughts simmer and coalesce before refactoring it out. START */
   div.updating-chart {
