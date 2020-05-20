@@ -269,7 +269,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
         .map(thisMetric => this.state.filters.prettyText[thisMetric])
         .sort((a, b) => a.localeCompare(b))
       )
-      } for ${this.conjunctionize(this.state.filters.region.map(e=>e))}`, // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
+      }${this.state.filters.region.length <= 1 ? '' : this.state.filters.perCapita ? ', per 100,000 folks,' : ', not population-adjusted,'} for ${this.conjunctionize(this.state.filters.region.map(e=>e))}`, // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
       font: {
         color: '#FFF', // Hide the plotly title
         size: 1
