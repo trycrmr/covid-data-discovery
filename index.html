@@ -271,7 +271,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
           return this.updateState( { filters: { ...this.state.filters, region: this.state.filters.region.filter(thisElem => filters !== thisElem) } } )
         
         if(this.state.filters.region.includes(filters)) return undefined // Don't do anything if there is only one filter
-        return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
+        return this.updateState( { filters: { ...this.state.filters, region: [ filters, ...this.state.filters.region ] } } )
       case 'metric':
         return this.updateState( { filters: { ...this.state.filters, metric: [ filters ] } } )
       case 'perCapita':
