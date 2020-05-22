@@ -14,13 +14,13 @@ const init = () => {
     meta: null,
     Plotly: null,
     formOptions: { region: ['Earth'], subregions: null },  
-    filters: {region: ['Earth'], metric: ['cases'], showSubregions: false,
+    filters: {region: ['Earth'], metric: ['deaths'], showSubregions: false, perCapita: false,
       prettyText: {
         "cases": "Cases",
         "deaths": "Deaths",
-        "caseChange": "Daily Case Change (#)",
+        "caseChange": "Daily Case Change",
         "caseChangePercent": "Daily Case Change (%)",
-        "deathsChange": "Daily Deaths Change (#)",
+        "deathsChange": "Daily Deaths Change",
         "deathsChangePercent": "Daily Deaths Change (%)",
         "survivalRate": "Survival Rate (%)"
       }
@@ -61,6 +61,55 @@ return function App (state = defaultState) {
     // this.state.listeners.forEach(thisListener => thisListener()); // Building the plot is a heavy operation with all the data to date, and a plot build will kick off unnecessarily like this. Stubbing this for now, but might incorporate this later in a smarter way. 
     return this.state
   }
+  this.getRandomElement = (arr) => {
+    return Math.floor(Math.random() * Math.floor(arr.length))
+  }
+  this.getRandomContinent = (exclusions = ['Diamond Princess', 'MS Zaandam']) => {
+    return Object.keys(this.state.data.subregions)
+    .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey) )[
+      this.getRandomElement(
+        Object.keys(this.state.data.subregions)
+        .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey))
+      )
+    ]
+  }
+  this.getRandomCountry = (exclusions = ['United States']) => {
+    let randomContinentName = this.getRandomContinent()
+    return Object.keys(this.state.data.subregions[randomContinentName].subregions)
+    .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey) )[
+      this.getRandomElement(
+        Object.keys(this.state.data.subregions[randomContinentName].subregions)
+        .filter(thisSubregionKey => !exclusions.includes(thisSubregionKey))
+      )
+    ]
+  }
+  this.getRandomUSState = () => {
+    let usSubregionList = Object.keys(this.findLocation('United States').subregions)
+    return usSubregionList[
+      this.getRandomElement(
+        usSubregionList)
+    ]
+  }
+  this.getRandomUSCounty = () => {
+    let stateSubregionList = Object.keys(this.findLocation(this.getRandomUSState()).subregions)
+    if(stateSubregionList.length > 0) {
+      return stateSubregionList[
+      this.getRandomElement(
+        stateSubregionList)
+      ]
+    } else {
+      this.getRandomUSCounty() // If this state doesn't have any counties, just get a different one. Keep doing that until one is found.
+    }
+  }
+  this.plotRandomLocations = () => { // plots five random locations
+    // random continent
+    let randomishLocations = [ this.getRandomContinent(), this.getRandomCountry(), 'United States', this.getRandomUSState(), this.getRandomUSCounty() ]
+    let stateUpdate = { filters: { ...this.state.filters, region: randomishLocations, perCapita: true } }
+    this.updateState(stateUpdate)
+  }
+  this.updatePlotTitle = newTitle => {
+    document.querySelector('.floating-plot-title').innerText = newTitle
+  }
   this.alertCovidActNow = () => {
     if(this.state.alerts.hasFired.covidActNow) {
       return undefined
@@ -99,7 +148,7 @@ return function App (state = defaultState) {
           if (!contentType || !contentType.includes('application/json')) {
             return eval(body) // Umm...eval is pretty unsafe if you're not 100% sure of the content it's evaluating. Running eval on all network calls seems like a pretty bad idea. Refactor this to use a writeable stream to get the result of the network call into a variable that's returned, or something like that. For now...it'll be served over HTTPS from only private resources I own...so...safe enough? Oof. Bad. Don't @ me. 
           } else {
-            return eval(body)
+            return JSON.parse(body)
           }
           break;
         }
@@ -235,9 +284,11 @@ ${err}`) } ) // So if something weird happens over the network that results in a
           return this.updateState( { filters: { ...this.state.filters, region: this.state.filters.region.filter(thisElem => filters !== thisElem) } } )
         
         if(this.state.filters.region.includes(filters)) return undefined // Don't do anything if there is only one filter
-        return this.updateState( { filters: { ...this.state.filters, region: [ ...this.state.filters.region, filters ] } } )
+        return this.updateState( { filters: { ...this.state.filters, region: [ filters, ...this.state.filters.region ] } } )
       case 'metric':
-        return this.updateState( { filters: { ...this.state.filters, metric: [ ...filters ] } } )
+        return this.updateState( { filters: { ...this.state.filters, metric: [ filters ] } } )
+      case 'perCapita':
+        return this.updateState( { filters: { ...this.state.filters, perCapita: filters } } ) // filters would be a boolean here
       case 'showSubregions':
         return this.updateState( { filters: { ...this.state.filters, showSubregions: filters } } )
       default:
@@ -249,9 +300,12 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     let newState = this.updateState( { plot: { ...this.state.plot, ... { config: { data: thisPlotConfig[0], layout: thisPlotConfig[1], config: thisPlotConfig[2] } } } } ) 
     this.state.plot.target(id)
     document.querySelector('div.table').remove()
+    document.querySelector('div.per-capita-calculations').remove()
     setTimeout( async () => {
       await Plotly.newPlot(this.state.plot.target(id), newState.plot.config.data, newState.plot.config.layout, newState.plot.config.config).catch(err => console.error(err)) // Handle this error some other way later. Also, await so the form is hidden & shown appropriately.
+      document.getElementById(id).append(this.generatePerCapitaCalcs(newState))
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
+      this.updatePlotTitle(newState.plot.config.layout.title.text)
       this.alertCovidActNow()
     }, 10) // Give the browser a breath to update the UI
   }
@@ -269,16 +323,24 @@ ${err}`) } ) // So if something weird happens over the network that results in a
     let calculatedHeight
     let calculatedMarginWidth
     let currentFontSize = parseFloat(getComputedStyle(this.state.plot.target()).fontSize)
-    plotLayout = { title: `${
+    plotLayout = { title: {
+      text: `${
       this.conjunctionize(
         this.state.filters.metric
         .map(thisMetric => this.state.filters.prettyText[thisMetric])
         .sort((a, b) => a.localeCompare(b))
       )
-      } for ${this.conjunctionize(this.state.filters.region.map(e=>e))}` // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
+      }${this.state.filters.perCapita ? ', per 100,000 folks,' : ', not population-adjusted,'} for ${this.conjunctionize(this.state.filters.region.map(e=>e))}`, // mapped so a copy is passed to the function instead of passing a reference to the state. Was updating state with dirty region values otherwise (ex. "and China")
+      font: {
+        color: '#FFF', // Hide the plotly title
+        size: 1
+      }
+    }
+      
     },
     plotLayout = { 
       ...plotLayout,
+      margin: { t: 70 }, // Removes the space the 
       font: {
         family: getComputedStyle(document.getElementById('plot')).fontFamily,
         size: getComputedStyle(document.getElementById('plot')).fontSize,
@@ -309,8 +371,17 @@ ${err}`) } ) // So if something weird happens over the network that results in a
             try {
               let obj = { x: [], y: [], text: [], type: 'scatter', mode: 'lines+markers', line: { color: thisColor }, markers: { color: thisColor }, name: `${curr.name} (${this.state.filters.prettyText[thisMetric]})`, hoverlabel: { namelength :-1 } /* Hoverlabel -1 ensures the labels that show on hover are not cut off and replaced with an ellipsis */ }
               // if(this.state.filters.region[0] === curr.name && locationNodes.length > 1) obj = { ...obj, line: { width: 1, dash: 'dot' }, marker: { size: 8 } }
-              obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
-              obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
+              if(this.state.filters.perCapita) { 
+                if(`${thisMetric}Per100000` in curr.totals.daily) {
+                  obj.x = [ ...Object.keys(curr.totals.daily[`${thisMetric}Per100000`]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
+                  obj.y = [ ...Object.values(curr.totals.daily[`${thisMetric}Per100000`]) ]
+                } else {
+                  alert(`${thisMetric}Per100000 does not exist for ${curr.name}.`)
+                }
+              } else {
+                obj.x = [ ...Object.keys(curr.totals.daily[thisMetric]).map(thisUnixEpochString => parseInt(thisUnixEpochString)) ]
+                obj.y = [ ...Object.values(curr.totals.daily[thisMetric]) ]
+              }
               if(parseInt(obj.x[0]) > parseInt(obj.x[1])) { // band aid fix to preserve order. Date to metric key-value pairs are stored as a hashmap and that's making it real tough to ensure the order. https://github.com/trycrmr/covid-data-batch-server/issues/6
                 obj.x = obj.x.reverse()
                 obj.y = obj.y.reverse()
@@ -402,7 +473,7 @@ If you do not believe that's the situation, please report an issue (use the link
     for (; dataPointIdx >= 0; dataPointIdx--) {
       rows += `<tr><th>${data[0].x[dataPointIdx].toLocaleDateString(undefined, this.state.table.timeFormat)}</th>`
       for (let j = 0; j < metricCount; j++) {
-        rows += `<td>${data[j].y[dataPointIdx]}</td>`
+        rows += `<td>${this.addCommasToNumber(data[j].y[dataPointIdx])}</td>`
         if(metricCount - 1 === j) rows += `</tr>`
       }
     }
@@ -410,6 +481,21 @@ If you do not believe that's the situation, please report an issue (use the link
     let html = `<div class="table" id="table"><table><caption>${details.title}</caption>${header}${rows}`
     html += `</tbody></table></div>`
     return document.createRange().createContextualFragment(html)
+  }
+  this.generatePerCapitaCalcs = (newState) => {
+    let allCalcHtml = ''
+    if(newState.filters.perCapita) {
+      let locationNodes = newState.filters.region.map(thisRegion => this.findLocation(thisRegion))
+      allCalcHtml = locationNodes.reduce((acc, curr, currIdx, origArr) => {
+        return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)} people. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
+        // return acc += `<p><span class="per-capita-line">${curr.name} has a population of about ${this.addCommasToNumber(curr.population)}. 100,000 people times this date's metric divided by ${curr.name}'s population of ${this.addCommasToNumber(curr.population)} calculates ${curr.name}'s per capita metric.</span></p>`
+      }, '')
+    }
+    let html = `<div class="per-capita-calculations">${allCalcHtml}</div>`
+    return document.createRange().createContextualFragment(html)
+  }
+  this.addCommasToNumber = num => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   }
 }
 
@@ -566,10 +652,10 @@ If you do not believe that's the situation, please report an issue (use the link
     display:none;
   }
   details.filters:not([open]) > summary {
-    font-size: 1em;
+    font-size: 0.8em;
     /* max-width: fit-content; */
     /* color: white; */
-    /* font-weight: 700; */
+    /* font-weight: 400; */
     /* background-color: black; */
     /* border-radius: 0.5em; */
 
@@ -612,7 +698,7 @@ If you do not believe that's the situation, please report an issue (use the link
     height: fit-content;
   }
   fieldset div {
-    display: inline;
+    display: block;
   }
   label.metric-checkbox {
     background-color: white;
@@ -638,6 +724,17 @@ If you do not believe that's the situation, please report an issue (use the link
   label.metric-checkbox.selected:hover {
     background-color: black;
   }
+  label.per-capita-checkbox.selected {
+    color: white;
+    font-weight: 700;
+    background-color: black;
+  }
+  label.per-capita-checkbox:hover {
+    background-color: whitesmoke;
+  }
+  label.per-capita-checkbox.selected:hover {
+    background-color: black;
+  }
   fieldset label > input {
     display: none;
   }
@@ -647,6 +744,7 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   .table {
     margin: 1em;
+    padding-top: 0.2em;
     height: fit-content;
     overflow: auto;
   }
@@ -657,6 +755,9 @@ If you do not believe that's the situation, please report an issue (use the link
   }
   table caption {
     text-align: left;
+  }
+  .per-capita-calculations {
+    margin: 1em;
   }
   th, td, tr {
     border: 1px solid black;
@@ -678,6 +779,15 @@ If you do not believe that's the situation, please report an issue (use the link
     }
     fieldset {
       padding: 0.2em;
+    }
+    .floating-plot-title {
+      font-size: 0.8em;
+    }
+    h4 {
+      font-size: 0.8em;
+    }
+    .two-toggle-button {
+      /* font-size: 0.8em; */
     }
   }
   div.loading {
@@ -781,6 +891,60 @@ If you do not believe that's the situation, please report an issue (use the link
     color: grey;
     font-style: italic;
   }
+  .two-toggle-button-group {
+    width: 100%;
+    text-align: center;
+    /* height: auto; */
+    /* align-content: center; */
+    /* align-items: center; */
+  }
+  .two-toggle-button-container {
+    width: 48%;
+    margin: 0.1em -0.5%;
+    /* height: 100px; */
+    /* border: 1px solid red; */
+    /* text-align: center; */
+    /* align-content: center; */
+    /* align-items: center; */
+    display: inline-grid;
+    line-height: 1.5em;
+  }
+  .two-toggle-button {
+    background-color: whitesmoke;
+    padding: 0.2em;
+    /* border-radius: 1em 0 0em 1em; */
+    font-weight: 700;
+    border: 0.05em solid black;
+    /* width: auto; */
+    display: inline-block;
+    cursor: pointer;
+    /* margin: auto; */
+    /* float: left; */
+    white-space: nowrap;
+  }
+  .two-toggle-button-right {
+    border-radius: 0em 1em 1em 0em;
+    border-left: none;
+    padding-left: 0px;
+  }
+  .two-toggle-button-left {
+    border-radius: 1em 0em 0em 1em;
+    border-right: none;
+    padding-right: 0px;
+  }
+  .two-toggle-button.pressed {
+    background-color: black;
+    color: whitesmoke;
+    /* border: 0.05em solid whitesmoke; */
+  }
+  .floating-plot-title {
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.2em;
+    /* height: fit-content; */
+    background-color: white;
+  }
   /* START Not using this updating-chart & lds-ring at the moment. The positioning bits I learned still boggle my mind, so going to let those thoughts simmer and coalesce before refactoring it out. START */
   div.updating-chart {
     position: absolute;
@@ -845,15 +1009,18 @@ If you do not believe that's the situation, please report an issue (use the link
           <summary>Data Dictionary</summary>
           <p>Cases include presumptive positive cases and probable cases, in accordance with CDC guidelines as of April 14.</p>
           <p>Death totals in the US include confirmed and probable, in accordance with CDC guidelines as of April 14.</p>
-          <p>Survival Rate (%) = Number recorded deaths / Number confirmed cases.</p>
+          <!-- <p>Survival Rate (%) = Number recorded deaths / Number confirmed cases.</p> -->
           <p>Data Granularity: County level - US; Province/State level - China, Canada, Australia; Country level - all other countries.</p>
-          <p>All cases of COVID-19 in repatriated US citizens from the Diamond Princess are grouped together. These individuals have been assigned to various quarantine locations (in military bases and hospitals) around the US. This grouping is consistent with the CDC.</p>
+          <!-- <p>All cases of COVID-19 in repatriated US citizens from the Diamond Princess are grouped together. These individuals have been assigned to various quarantine locations (in military bases and hospitals) around the US. This grouping is consistent with the CDC.</p> -->
           <p>The names of locations included on the Website correspond with the official designations used by the <a href="https://www.iso.org/home.html" target="_blank" rel="noreferrer noopener" alt="Link to International Organization for Standardization website">International Organization for Standardization</a>.</p>
+          <p>The New York State counties that make up New York City have been rolled up into a "New York, New York" location. To be explicit, this includes Richmond County (Staten Island), Kings County (Brooklyn), New York County (Manhattan), Bronx County (The Bronx), and Queens County (Queens). This was done as the raw data has rolled up all the boroughs into "New York", but counts that location at the county level.</p>
+          <p>As this site does not have statistics on COVID testing, it is advised to use the cumulative death counts per 100,000 folks to understand the trajectory of the disease in a particular location, especially if comparing across locations.</p>
         </details>
         <details>
           <summary>Data Sources</summary>
           <p><a href="https://github.com/CSSEGISandData/COVID-19/tree/master/csse_covid_19_data/csse_covid_19_time_series" target="_blank" rel="noreferrer noopener" alt="Link to JHU data source">Raw data</a> made available by Johns Hopkins Center for Systems Science and Engineering. Aggregated to 28 days worth of regional and global metrics by <a href="https://terrycreamer.codes" target="_blank" rel="noreferrer noopener" alt="Terry Creamer's personal website">Terry Creamer</a> (<a href="https://github.com/trycrmr/covid-data-batch-server/blob/5-jhu-load/createJHUGlobalTree.js" target="_blank" rel="noreferrer noopener" alt="Link to the code that uses the JHU raw data to create Global aggregates.">code</a>).</p> 
           <p>Note that the metrics on the <a href="https://www.arcgis.com/apps/opsdashboard/index.html#/bda7594740fd40299423467b48e9ecf6" target="_blank" rel="noreferrer noopener" alt=" COVID-19 Dashboard by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University">COVID-19 Dashboard by the Center for Systems Science and Engineering (CSSE) at Johns Hopkins University</a> and the metrics denoted here will, likely, not match. They should be within a few days of each other and fairly close. Updated daily shortly after Center for Systems Science and Engineering (CSSE) at Johns Hopkins University's updates.</p>
+          <p>Per capita calculations use the following population estimates generated from <a href="https://www.census.gov/data/tables/time-series/demo/popest/2010s-counties-total.html" target="_blank" rel="noreferrer noopener" alt="Link to United States Census Department estimates">2019 United States Census Department estimates for U.S. Counties and States</a>, <a href="https://population.un.org/wpp/Download/Standard/Population/" target="_blank" rel="noreferrer noopener" alt="Link to United Nations population estimates">2019 United Nations estimates for Countries</a>, and aggregates for continents and Earth deduced from there. Province-level counts were captured for the following countries from the following sources their name is linked to: <a href="http://data.stats.gov.cn/english/easyquery.htm?cn=E0103" target="_blank" rel="noreferrer noopener" alt="Link to China population estimates">China</a> (2018), <a href="https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=1710000901" target="_blank" rel="noreferrer noopener" alt="Link to Canada's population estimates">Canada</a> (July 2019), and <a href="http://stat.data.abs.gov.au/Index.aspx?DataSetCode=ERP_QUARTERLY" target="_blank" rel="noreferrer noopener" alt="Link to Australia's population estimates">Australia</a> (June 2019). Continent and planet aggregates will underestimate populations because not all countries are included in the COVID data reports. They just aren't captured in the data that informs this website at this time either because they aren't reporting COVID data publicly or for other reasons.</p>
         </details>
         <details>
           <summary>Suggest a Feature</summary>
@@ -902,52 +1069,103 @@ If you do not believe that's the situation, please report an issue (use the link
               <div class="tags"></div>
             </div>
           </fieldset>
-              <fieldset>
-                <legend>Metrics</legend>
-                <div>
-                  <label class="metric-checkbox selected">Cases
-                    <input type="checkbox" value="cases" name="cases" checked>
-                  </label>
+          <fieldset>
+            <legend>Options</legend>
+            <div class="two-toggle-button-group">
+              <div class="two-toggle-button-container">
+                <span class="two-toggle-button casesdeaths two-toggle-button-left pressed">Deaths</span>
+              </div>
+              <div class="two-toggle-button-container">
+                <span class="two-toggle-button casesdeaths two-toggle-button-right">Cases</span>
+              </div>
+            </div>
+              <div class="two-toggle-button-group">
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button per-capita two-toggle-button-left">Raw Counts</span>
                 </div>
-                <div>
-                  <label class="metric-checkbox">Deaths
-                    <input type="checkbox" value="deaths" name="deaths">
-                  </label>
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button per-capita two-toggle-button-right pressed">Per 100,000</span>
                 </div>
-                <fieldset class='sub-fieldset'>
-                  <legend>Derived Metrics</legend>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (#)
-                      <input type="checkbox" value="caseChange" name="cases">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Case Change (%)
-                      <input type="checkbox" value="caseChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (#)
-                      <input type="checkbox" value="deathsChange" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Daily Deaths Change (%)
-                      <input type="checkbox" value="deathsChangePercent" name="deaths">
-                    </label>
-                  </div>
-                  <div>
-                    <label class="metric-checkbox">Survival Rate (%)
-                      <input type="checkbox" value="survivalRate" name="deaths">
-                    </label>
-                  </div>
-                </fieldset>
-              </fieldset>
+              </div>
+              <div class="two-toggle-button-group">
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button dailycumulative two-toggle-button-left pressed">Cumulative</span>
+                </div>
+                <div class="two-toggle-button-container">
+                  <span class="two-toggle-button dailycumulative two-toggle-button-right">Daily</span>
+                </div>
+              </div>
+              <!-- <div class="two-toggle-button-group">
+                <span class="two-toggle-button per-capita left">Adjusted For Population</span>
+                <span class="two-toggle-button per-capita right">Raw Counts</span>
+              </div>
+              <div class="two-toggle-button-group">
+                <span class="two-toggle-button per-capita left">Adjusted For Population</span>
+                <span class="two-toggle-button per-capita right">Raw Counts</span>
+              </div>
+              <div class="two-toggle-button-group">
+                <span class="two-toggle-button per-capita left">Adjusted For Population</span>
+                <span class="two-toggle-button per-capita right">Raw Counts</span>
+              </div> -->
+          </fieldset>
+
+          <fieldset style="display: none;">
+            <legend>Metrics</legend>
+            <div>
+              <label class="metric-checkbox selected">Cases
+                <input type="checkbox" value="cases" name="cases" checked>
+              </label>
+            </div>
+            <div>
+              <label class="metric-checkbox">Deaths
+                <input type="checkbox" value="deaths" name="deaths">
+              </label>
+            </div>
+            <fieldset class='sub-fieldset'>
+              <legend>Derived Metrics</legend>
+              <div>
+                <label class="metric-checkbox">Daily Case Change (#)
+                  <input type="checkbox" value="caseChange" name="cases">
+                </label>
+              </div>
+              <!-- <div>
+                <label class="metric-checkbox">Daily Case Change (%)
+                  <input type="checkbox" value="caseChangePercent" name="deaths">
+                </label>
+              </div> -->
+              <div>
+                <label class="metric-checkbox">Daily Deaths Change (#)
+                  <input type="checkbox" value="deathsChange" name="deaths">
+                </label>
+              </div>
+              <!-- <div>
+                <label class="metric-checkbox">Daily Deaths Change (%)
+                  <input type="checkbox" value="deathsChangePercent" name="deaths">
+                </label>
+              </div> -->
+              <!-- <div>
+                <label class="metric-checkbox">Survival Rate (%)
+                  <input type="checkbox" value="survivalRate" name="deaths">
+                </label>
+              </div> -->
+            </fieldset>
+            <fieldset class='sub-fieldset'>
+              <legend>Toggle Per Capita ("Cases per 100,000 people")</legend>
+              <div>
+                <label class="per-capita-checkbox">Per Capita by 100,000
+                  <input type="checkbox" value="perCapita" name="perCapita"> <!-- Just passes true or false, which can be captured with event.target.checked. Value is only set because label will also fire of an event, but it does not have a value for "checked" -->
+                </label>
+              </div>
+            </fieldset>
+          </fieldset>
+
         </form>
       </details>
+      <div class="floating-plot-title"></div>
     </div>
   </div>
   <div id='plot'></div>
+  <div class='per-capita-calculations'></div>
   <div class='table'></div>
   <!--[if IE]>
     <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="https://browsehappy.com/">upgrade your browser</a> to improve your experience and security.</p>
@@ -1015,7 +1233,9 @@ document.addEventListener("DOMContentLoaded", async(event) => {
   // app.updateForm()
   // app.updateState({ listeners: [...app.state.listeners, ...[ () => app.updatePlot('plot') ]] } ) // Left stubbed out in case because I expect to reincporate listeners in a smarter way at some point.
   app.locationSearch('') // Sets the initial filter as a location tag box to add & remove (has been "Earth", typically)
-  app.updatePlot('plot')  
+  // app.updatePlot('plot') 
+  app.plotRandomLocations()
+  app.locationSearch('refresh location search UI') // Refreshes the location search UI with the random locations chosen
   document.querySelector('.sticky-form').removeAttribute('style') // Unhides the form. This is so folks don't play with the form before the data has loaded. Will entertain with updates on how the load is going.
 
   document.querySelector('input[name=location-search-box]').addEventListener('input', (event) => { app.locationSearch(event.target.value) })
@@ -1036,6 +1256,60 @@ document.addEventListener("DOMContentLoaded", async(event) => {
     } else {
       return undefined
     }
+  }))
+  document.querySelector('.per-capita-checkbox').addEventListener('click', (event) => { 
+    if(!event.target.value) return undefined
+    event.target.labels[0].classList.toggle('selected')
+    app.setFilters('perCapita', event.target.checked) 
+  })
+  document.querySelectorAll('.casesdeaths').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    document.querySelectorAll('.casesdeaths').forEach(thisNode => thisNode.classList.toggle('pressed'))
+    switch(app.state.filters.metric[0]) {
+      case 'cases':
+        app.setFilters('metric', 'deaths')
+        break
+      case 'caseChange':
+        app.setFilters('metric', 'deathsChange')
+        break
+      case 'deaths':
+        app.setFilters('metric', 'cases')
+        break
+      case 'deathsChange':
+        app.setFilters('metric', 'caseChange')
+        break
+      default: 
+        // code should never get here
+        console.error('In default switch that shouldnt trigger')
+        break
+    }
+    console.info('test casesdeaths')
+  }))
+  document.querySelectorAll('.per-capita').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    document.querySelectorAll('.per-capita').forEach(thisNode => thisNode.classList.toggle('pressed'))
+    console.info('test per-capita')
+    app.setFilters('perCapita', app.state.filters.perCapita ? false : true)
+  }))
+  document.querySelectorAll('.dailycumulative').forEach(thisNode => thisNode.addEventListener('click', (event) => {
+    document.querySelectorAll('.dailycumulative').forEach(thisNode => thisNode.classList.toggle('pressed'))
+    switch(app.state.filters.metric[0]) {
+      case 'cases':
+        app.setFilters('metric', 'caseChange')
+        break
+      case 'caseChange':
+        app.setFilters('metric', 'cases')
+        break
+      case 'deaths':
+        app.setFilters('metric', 'deathsChange')
+        break
+      case 'deathsChange':
+        app.setFilters('metric', 'deaths')
+        break
+      default: 
+        // code should never get here
+        console.error('In default switch that shouldnt trigger')
+        break
+    }
+    console.info('test dailycumulative')
   }))
   // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
   //   if(!event.target.value) return undefined
