@@ -34,6 +34,11 @@ const init = () => {
       timeFormat: { month: 'short', day: 'numeric', timeZone: 'UTC' } // use with toLocaleDateString
     },
     listeners: [],
+    alerts: {
+      hasFired: {
+        covidActNow: false
+      }
+    }
   }  
 return function App (state = defaultState) {
   this.log = output => console.debug(output)
@@ -104,6 +109,14 @@ return function App (state = defaultState) {
   }
   this.updatePlotTitle = newTitle => {
     document.querySelector('.floating-plot-title').innerText = newTitle
+  }
+  this.alertCovidActNow = () => {
+    if(this.state.alerts.hasFired.covidActNow) {
+      return undefined
+    } else {
+      alert('If interested in when your State or County in the United States should open, reference https://covidactnow.org.')
+      this.updateState({ alerts: { hasFired: { covidActNow: true }}})
+    }
   }
   this.updateLoadingUI = async obj => { // {num, total, name}
     const loadingUI = document.querySelector(`.${obj.name}`) // Not checking to see if it exists first because it is part of the initial load in the HTML. This could change if more things get loaded in.
@@ -293,6 +306,7 @@ ${err}`) } ) // So if something weird happens over the network that results in a
       document.getElementById(id).append(this.generatePerCapitaCalcs(newState))
       document.getElementById(id).append(this.generateTable(newState.plot.config.data, { title: newState.plot.config.layout.title.text }))
       this.updatePlotTitle(newState.plot.config.layout.title.text)
+      this.alertCovidActNow()
     }, 10) // Give the browser a breath to update the UI
   }
   this.conjunctionize = arr => { // LOL a refactored code golf answer https://codegolf.stackexchange.com/a/37726/94505 
