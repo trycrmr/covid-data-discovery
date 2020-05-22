@@ -135,7 +135,7 @@ return function App (state = defaultState) {
           if (!contentType || !contentType.includes('application/json')) {
             return eval(body) // Umm...eval is pretty unsafe if you're not 100% sure of the content it's evaluating. Running eval on all network calls seems like a pretty bad idea. Refactor this to use a writeable stream to get the result of the network call into a variable that's returned, or something like that. For now...it'll be served over HTTPS from only private resources I own...so...safe enough? Oof. Bad. Don't @ me. 
           } else {
-            return eval(body)
+            return JSON.parse(body)
           }
           break;
         }
