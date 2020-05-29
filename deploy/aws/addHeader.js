@@ -3,7 +3,7 @@ exports.handler = async (event, context) => {
   const response = event.Records[0].cf.response
 
   const headerName = 'File-Size'
-  const UNCOMPRESSED_DATA_SIZE = '103468745'
+  const UNCOMPRESSED_DATA_SIZE = '105118244'
   const UNCOMPRESSED_PLOTLY_SIZE = '3325432'
 
   switch(requestURI) {
