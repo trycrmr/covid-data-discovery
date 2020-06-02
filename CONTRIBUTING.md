@@ -9,7 +9,7 @@
 
 ## Install / Code contributions
 1. Fork the repo (click the button in the top right your Github interface)
-2. Clone the repo (SSH: `git clone git@github.com:trycrmr/covid-data-discovery.git` or HTTPS: `git clone https://github.com/trycrmr/covid-data-discovery.git`)
+2. Clone the repo (SSH: `git clone git@github.com:[YOUR_USERNAME]/covid-data-discovery.git` or HTTPS: `git clone https://github.com/[YOUR_USERNAME]/covid-data-discovery.git`)
 3. Add git@github.com:trycrmr/covid-data-discovery.git as an upstream repo (`git remote add upstream https://github.com/trycrmr/covid-data-discovery.git`)
 4. `npm run dev`
 5. Create a new branch named on your forked repo with the following convention: "[issue-number][1-3 words summarizing the issue]" (Example: "19-new-covid-vaccine"). If an issue doesn't exist, open one, reference it, and start working on it. 
