@@ -1292,11 +1292,11 @@ document.addEventListener("DOMContentLoaded", async(event) => {
         console.error('In default switch that shouldnt trigger')
         break
     }
-    console.info('test casesdeaths')
+    // console.info('test casesdeaths')
   }))
   document.querySelectorAll('.per-capita').forEach(thisNode => thisNode.addEventListener('click', (event) => {
     document.querySelectorAll('.per-capita').forEach(thisNode => thisNode.classList.toggle('pressed'))
-    console.info('test per-capita')
+    // console.info('test per-capita')
     app.setFilters('perCapita', app.state.filters.perCapita ? false : true)
   }))
   document.querySelectorAll('.dailycumulative').forEach(thisNode => thisNode.addEventListener('click', (event) => {
@@ -1319,7 +1319,7 @@ document.addEventListener("DOMContentLoaded", async(event) => {
         console.error('In default switch that shouldnt trigger')
         break
     }
-    console.info('test dailycumulative')
+    // console.info('test dailycumulative')
   }))
   // document.querySelector('input[name=toggle-subregions]').addEventListener('click', event => {
   //   if(!event.target.value) return undefined
