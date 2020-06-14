@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 const port = 3000
-const UNCOMPRESSED_DATA_SIZE = 117499914
+const UNCOMPRESSED_DATA_SIZE = 118326658
 const UNCOMPRESSED_PLOTLY_SIZE = 3325432
 
 app.get('/', (req, res) => res.sendFile(`${__dirname}/index.html`))
