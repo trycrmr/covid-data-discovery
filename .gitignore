@@ -1,4 +1,4 @@
 node_modules/
 jhu-*
 data.json
-deploy/
+configs/.env
