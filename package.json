@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/trycrmr/covid-data-discovery#readme",
   "devDependencies": {
-    "express": "4.17.1",
+    "express": "4.17.3",
     "nodemon": "2.0.2"
   }
 }
